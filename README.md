@@ -291,7 +291,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ```
 MIT License
 
-Copyright (c) 2024 Posturely Team
+Copyright (c) 2025 Posturely Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -314,7 +314,7 @@ SOFTWARE.
 
 ## 🎖 Contest Submission
 
-**Built for Chrome Built-in AI Challenge 2024**
+**Built for Chrome Built-in AI Challenge 2025**
 
 This extension showcases the power of Chrome's built-in AI APIs by creating an intelligent, privacy-first wellness solution that runs entirely in the browser. By leveraging Chrome's AI Summarizer, Translation, Writer, and Language Model APIs, Posturely delivers personalized health insights without compromising user privacy.
 
