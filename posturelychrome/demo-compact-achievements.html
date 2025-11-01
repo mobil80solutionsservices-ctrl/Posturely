@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Compact Achievements Demo</title>
+    <style>
+        :root {
+            --bg: #FFFFFF;
+            --text: #2B1E0F;
+            --subtext: #5B4A37;
+            --accent: #FED867;
+            --border: rgba(122, 75, 0, 0.18);
+            --buttonPrimaryText: #2B1E0F;
+            --secondaryBG: #FFF3C9;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .demo-container {
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        /* Compact Achievement System Styles */
+        .achievements-compact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .achievements-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .achievements-summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .achievements-count {
+            font-size: 12px;
+            color: var(--subtext);
+            font-weight: 600;
+        }
+
+        .view-details-btn {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .view-details-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .achievements-scroll-container {
+            overflow-x: auto;
+            padding: 4px 0 8px 0;
+            margin-bottom: 8px;
+        }
+
+        .achievements-scroll-container::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .achievements-scroll-container::-webkit-scrollbar-track {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .achievements-scroll-container::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .achievements-compact-grid {
+            display: flex;
+            gap: 8px;
+            padding: 4px 0;
+            min-width: max-content;
+        }
+
+        .achievement-compact-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 70px;
+            max-width: 70px;
+            padding: 8px 6px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .achievement-compact-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .achievement-compact-item.earned {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+            border-color: var(--accent);
+        }
+
+        .achievement-compact-item.in-progress {
+            border-color: #007AFF;
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .achievement-compact-item.locked {
+            opacity: 0.6;
+        }
+
+        .achievement-compact-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+
+        .achievement-compact-name {
+            font-size: 9px;
+            font-weight: 600;
+            line-height: 1.2;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .achievement-compact-item.earned .achievement-compact-name {
+            color: var(--buttonPrimaryText);
+        }
+
+        .achievement-compact-progress {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #007AFF;
+            color: white;
+            font-size: 8px;
+            font-weight: 600;
+            padding: 1px 3px;
+            border-radius: 6px;
+            line-height: 1;
+        }
+
+        .achievements-details-container {
+            margin-top: 12px;
+        }
+
+        .achievements-details-container.hidden {
+            display: none;
+        }
+
+        .comparison {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .comparison-item {
+            flex: 1;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .comparison-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .old-style {
+            background: #ffebee;
+        }
+
+        .new-style {
+            background: #e8f5e8;
+        }
+    </style>
+</head>
+<body>
+    <h1>Compact Achievements UI Demo</h1>
+    
+    <div class="demo-container">
+        <h3>New Improved UI</h3>
+        <div class="achievements-compact-header">
+            <div class="achievements-title">Achievements</div>
+            <div class="achievements-summary">
+                <span class="achievements-count">4/15</span>
+                <button class="view-details-btn" onclick="toggleDetails()">View All</button>
+            </div>
+        </div>
+
+        <div class="achievements-scroll-container" id="compactView">
+            <div class="achievements-compact-grid">
+                <!-- Earned achievements -->
+                <div class="achievement-compact-item earned" title="Complete your first tracking session">
+                    <div class="achievement-compact-icon">🎯</div>
+                    <div class="achievement-compact-name">Getting Started</div>
+                </div>
+                
+                <div class="achievement-compact-item earned" title="Maintain a 3-day tracking streak">
+                    <div class="achievement-compact-icon">🌱</div>
+                    <div class="achievement-compact-name">Habit Builder</div>
+                </div>
+                
+                <div class="achievement-compact-item earned" title="Track for 60 total minutes">
+                    <div class="achievement-compact-icon">⏰</div>
+                    <div class="achievement-compact-name">Hour Master</div>
+                </div>
+                
+                <div class="achievement-compact-item earned" title="Track for 30 minutes in a single day">
+                    <div class="achievement-compact-icon">📅</div>
+                    <div class="achievement-compact-name">Daily Dedication</div>
+                </div>
+                
+                <!-- In-progress achievements -->
+                <div class="achievement-compact-item in-progress" title="Maintain a 7-day tracking streak">
+                    <div class="achievement-compact-icon">🔥</div>
+                    <div class="achievement-compact-name">Week Warrior</div>
+                    <div class="achievement-compact-progress">43%</div>
+                </div>
+                
+                <div class="achievement-compact-item in-progress" title="Track for 120 total minutes">
+                    <div class="achievement-compact-icon">⏳</div>
+                    <div class="achievement-compact-name">Time Master</div>
+                    <div class="achievement-compact-progress">67%</div>
+                </div>
+                
+                <!-- Locked achievements -->
+                <div class="achievement-compact-item locked" title="Maintain a 30-day tracking streak">
+                    <div class="achievement-compact-icon">🔒</div>
+                    <div class="achievement-compact-name">Month Champion</div>
+                </div>
+                
+                <div class="achievement-compact-item locked" title="Track for 60 minutes in a single day">
+                    <div class="achievement-compact-icon">🔒</div>
+                    <div class="achievement-compact-name">Marathon Session</div>
+                </div>
+                
+                <div class="achievement-compact-item locked" title="Achieve perfect posture score for a week">
+                    <div class="achievement-compact-icon">🔒</div>
+                    <div class="achievement-compact-name">Perfect Week</div>
+                </div>
+                
+                <div class="achievement-compact-item locked" title="Track early morning sessions">
+                    <div class="achievement-compact-icon">🔒</div>
+                    <div class="achievement-compact-name">Early Bird</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="achievements-details-container hidden" id="detailsView">
+            <p><strong>Detailed view would show:</strong></p>
+            <ul>
+                <li>Full descriptions</li>
+                <li>Progress bars</li>
+                <li>Earned dates</li>
+                <li>Requirements</li>
+                <li>Categories</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="comparison">
+        <div class="comparison-item old-style">
+            <div class="comparison-title">❌ Old UI Problems</div>
+            <ul>
+                <li>Too much vertical space</li>
+                <li>Cluttered with details</li>
+                <li>Hard to see all achievements</li>
+                <li>No clear visual hierarchy</li>
+                <li>Poor mobile experience</li>
+            </ul>
+        </div>
+        
+        <div class="comparison-item new-style">
+            <div class="comparison-title">✅ New UI Benefits</div>
+            <ul>
+                <li>Compact horizontal scrolling</li>
+                <li>Clean badge + name view</li>
+                <li>See all achievements at once</li>
+                <li>Details on demand</li>
+                <li>Mobile-friendly</li>
+                <li>Progress indicators</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function toggleDetails() {
+            const compactView = document.getElementById('compactView');
+            const detailsView = document.getElementById('detailsView');
+            const btn = document.querySelector('.view-details-btn');
+            
+            if (detailsView.classList.contains('hidden')) {
+                detailsView.classList.remove('hidden');
+                compactView.classList.add('hidden');
+                btn.textContent = 'View Less';
+            } else {
+                detailsView.classList.add('hidden');
+                compactView.classList.remove('hidden');
+                btn.textContent = 'View All';
+            }
+        }
+    </script>
+</body>
+</html>

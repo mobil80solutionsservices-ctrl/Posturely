@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Posturely - Full Body Scan</title>
+    <style>
+        :root {
+            --bg: #FFFFFF;
+            --text: #2B1E0F;
+            --subtext: #5B4A37;
+            --accent: #FED867;
+            --border: rgba(122, 75, 0, 0.18);
+            --score-surface: rgba(0,0,0,0.04);
+            --buttonPrimaryBG1: #FFD045;
+            --buttonPrimaryBG2: #F9B52D;
+            --buttonPrimaryText: #2B1E0F;
+            --secondaryBG: #FFF3C9;
+        }
+        
+        body {
+            width: 100%;
+            height: 100vh;
+            padding: 0;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 16px;
+            background: #FFEDB3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            border: 1px solid var(--border);
+        }
+        
+        .title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0;
+        }
+        
+
+        
+        .scan-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .scan-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .scan-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0 0 8px 0;
+        }
+        
+        .scan-subtitle {
+            font-size: 16px;
+            color: var(--subtext);
+            margin: 0;
+        }
+        
+        .camera-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .video-container {
+            width: 100%;
+            max-width: 640px;
+            height: 480px;
+            background: #000;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid var(--border);
+        }
+        
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .countdown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .countdown-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .countdown-content h2 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            color: #FFD700;
+        }
+        
+        .countdown-number {
+            font-size: 72px;
+            font-weight: bold;
+            color: #FFD700;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .countdown-content p {
+            margin: 20px 0 0 0;
+            font-size: 16px;
+            color: #FFFFFF;
+        }
+        
+        .scan-controls {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .button {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .button-primary {
+            background: linear-gradient(180deg, var(--buttonPrimaryBG1), var(--buttonPrimaryBG2));
+            color: var(--buttonPrimaryText);
+            border: 1px solid var(--border);
+        }
+        
+        .button-primary:hover {
+            filter: brightness(0.98);
+            transform: translateY(-1px);
+        }
+        
+        .button-secondary {
+            background: var(--secondaryBG);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        .button-secondary:hover {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+            transform: translateY(-1px);
+        }
+        
+        .scan-status {
+            text-align: center;
+            padding: 16px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        
+        .status-text {
+            font-size: 16px;
+            color: var(--text);
+            font-weight: 600;
+        }
+        
+        .scan-results {
+            margin-top: 20px;
+            padding: 20px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        
+        .results-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0 0 16px 0;
+        }
+        
+        .results-content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text);
+        }
+        
+        .exercises-button {
+            margin-top: 20px;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top: 2px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Score styling classes */
+        .score-good {
+            background: #34C759;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        
+        .score-fair {
+            background: #FFA000;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        
+        .score-poor {
+            background: #EF4444;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="brand">
+                <div class="brand-icon">🦒</div>
+                <div class="title">Full Body Scan</div>
+            </div>
+        </div>
+        
+        <div class="scan-content">
+            <div class="scan-header">
+                <h1 class="scan-title" data-translate="full-body-posture-scan">📷 Full Body Posture Scan</h1>
+                <p class="scan-subtitle" data-translate="comprehensive-posture-analysis">Get comprehensive posture analysis with AI-powered insights</p>
+            </div>
+            
+            <div class="camera-section">
+                <div class="video-container">
+                    <video id="scanVideo" autoplay playsinline></video>
+                    <canvas id="scanCanvas"></canvas>
+                    <div id="countdownOverlay" class="countdown-overlay hidden">
+                        <div class="countdown-content">
+                            <h2 data-translate="get-ready-for-scan">Get Ready for Scan!</h2>
+                            <div id="countdownValue" class="countdown-number">3</div>
+                            <p data-translate="position-for-capture">Position yourself for full body capture</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="scan-controls">
+                    <button id="startScanBtn" class="button button-primary" data-translate="start-scan">
+                        📸 Start Scan
+                    </button>
+                    <button id="captureScanBtn" class="button button-primary hidden" data-translate="capture">
+                        📸 Capture
+                    </button>
+                    <button id="retakeScanBtn" class="button button-secondary hidden" data-translate="retake">
+                        🔄 Retake
+                    </button>
+                </div>
+                
+                <div id="scanStatus" class="scan-status hidden">
+                    <div class="status-text">Initializing camera...</div>
+                </div>
+            </div>
+            
+            <div id="scanResults" class="scan-results hidden">
+                <h2 class="results-title">📊 Scan Results</h2>
+                <div id="resultsContent" class="results-content">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>Analyzing posture data...</span>
+                    </div>
+                </div>
+                <button id="exercisesButton" class="button button-primary exercises-button hidden" data-translate="do-guided-exercises">
+                    🏃‍♂️ Do Guided Exercises
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="src/NavigationManager.js"></script>
+    <script type="module" src="src/ScanPageController.js"></script>
+</body>
+</html>

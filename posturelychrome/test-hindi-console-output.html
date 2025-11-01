@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Hindi Console Output</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Hindi Console Output</h1>
+    <p>This page tests the improved console logging for Hindi translation availability.</p>
+    <p><strong>Check the browser console to see the improved output!</strong></p>
+
+    <div id="status" class="status">Ready to test...</div>
+    <button onclick="testLocalizationService()">Test LocalizationService</button>
+    <button onclick="testEnhancedLanguageManager()">Test EnhancedLanguageManager</button>
+    <button onclick="testLanguageModelManager()">Test LanguageModelManager</button>
+
+    <script type="module">
+        import { LocalizationService } from './src/LocalizationService.js';
+        import { EnhancedLanguageManager } from './src/EnhancedLanguageManager.js';
+        import { LanguageModelManager } from './src/LanguageModelManager.js';
+
+        window.testLocalizationService = async function() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = 'Testing LocalizationService console output...';
+            
+            try {
+                const service = new LocalizationService();
+                await service.initialize();
+                
+                // This should now log "hi: हिंदी" instead of just "hi"
+                await service.getTranslation('Hello', 'hi');
+                
+                statusDiv.textContent = '✅ LocalizationService test completed - check console for "hi: हिंदी"!';
+            } catch (error) {
+                statusDiv.textContent = `❌ LocalizationService test failed: ${error.message}`;
+                console.error('LocalizationService test error:', error);
+            }
+        };
+
+        window.testEnhancedLanguageManager = async function() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = 'Testing EnhancedLanguageManager console output...';
+            
+            try {
+                const manager = new EnhancedLanguageManager();
+                await manager.initialize();
+                
+                // This should now log "hi: हिंदी" instead of just "hi"
+                await manager.downloadLanguageModel('hi');
+                
+                statusDiv.textContent = '✅ EnhancedLanguageManager test completed - check console for "hi: हिंदी"!';
+            } catch (error) {
+                statusDiv.textContent = `❌ EnhancedLanguageManager test failed: ${error.message}`;
+                console.error('EnhancedLanguageManager test error:', error);
+            }
+        };
+
+        window.testLanguageModelManager = async function() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = 'Testing LanguageModelManager console output...';
+            
+            try {
+                const manager = new LanguageModelManager();
+                await manager.initialize();
+                
+                // This should now log "hi: हिंदी" instead of just "hi"
+                await manager.downloadModel('hi');
+                
+                statusDiv.textContent = '✅ LanguageModelManager test completed - check console for "hi: हिंदी"!';
+            } catch (error) {
+                statusDiv.textContent = `❌ LanguageModelManager test failed: ${error.message}`;
+                console.error('LanguageModelManager test error:', error);
+            }
+        };
+    </script>
+</body>
+</html>

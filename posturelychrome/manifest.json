@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Posturely - Posture Tracking",
+  "version": "1.0.0",
+  "description": "Track your posture while working with real-time feedback and body scans",
+  "permissions": [
+    "storage",
+    "sidePanel",
+    "tabs",
+    "notifications",
+    "aiLanguageModel"
+  ],
+  "action": {
+    "default_title": "Posturely"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "mediapipe/vision_bundle.mjs",
+        "mediapipe/wasm/*",
+        "mediapipe/models/*",
+        "scan.html",
+        "exercises.html",
+        "src/*.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

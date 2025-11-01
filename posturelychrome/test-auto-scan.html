@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Full Body Scan Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .video-container {
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        #scanVideo {
+            width: 100%;
+            max-width: 640px;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        
+        #scanCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            border: 2px solid #FED867;
+            border-radius: 8px;
+        }
+        
+        .status-container {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .status-text {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .status-waiting { color: #FED867; }
+        .status-ready { color: #4CAF50; }
+        .status-countdown { color: #FF9800; }
+        .status-capturing { color: #2196F3; }
+        .status-instruction { color: #9C27B0; }
+        .status-processing { color: #607D8B; }
+        .status-success { color: #4CAF50; }
+        .status-error { color: #F44336; }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: #FED867;
+            color: #1a1a1a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+        
+        button:hover {
+            background: #E6C458;
+        }
+        
+        button:disabled {
+            background: #666;
+            color: #999;
+            cursor: not-allowed;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .info {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .info h3 {
+            color: #FED867;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Auto Full Body Scan Test</h1>
+        
+        <div class="info">
+            <h3>How it works:</h3>
+            <ul>
+                <li>Position yourself so your full body is visible in the camera</li>
+                <li>System will auto-detect when you're properly positioned</li>
+                <li>Hold position for 2 seconds to trigger countdown</li>
+                <li>3-2-1 countdown, then front capture</li>
+                <li>Audio will prompt you to turn to your side</li>
+                <li>Repeat process for side capture</li>
+            </ul>
+        </div>
+        
+        <div class="controls">
+            <button id="startScanBtn">Start Auto Scan</button>
+            <button id="stopScanBtn" class="hidden">Stop Scan</button>
+        </div>
+        
+        <div class="status-container">
+            <div id="scanStatus" class="status-text status-waiting">
+                Click "Start Auto Scan" to begin
+            </div>
+        </div>
+        
+        <div class="video-container">
+            <video id="scanVideo" autoplay muted playsinline></video>
+            <canvas id="scanCanvas"></canvas>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ScanPageController } from './src/ScanPageController.js';
+        
+        // Initialize the scan controller
+        const scanController = new ScanPageController();
+        
+        // Override elements to use our test elements
+        scanController.elements = {
+            scanVideo: document.getElementById('scanVideo'),
+            scanCanvas: document.getElementById('scanCanvas'),
+            startScanBtn: document.getElementById('startScanBtn'),
+            stopScanBtn: document.getElementById('stopScanBtn'),
+            scanStatus: document.getElementById('scanStatus')
+        };
+        
+        // Set up event listeners
+        document.getElementById('startScanBtn').addEventListener('click', async () => {
+            try {
+                document.getElementById('startScanBtn').classList.add('hidden');
+                document.getElementById('stopScanBtn').classList.remove('hidden');
+                
+                await scanController.startScan();
+            } catch (error) {
+                console.error('Failed to start scan:', error);
+                alert('Failed to start scan: ' + error.message);
+            }
+        });
+        
+        document.getElementById('stopScanBtn').addEventListener('click', () => {
+            scanController.cleanup();
+            document.getElementById('startScanBtn').classList.remove('hidden');
+            document.getElementById('stopScanBtn').classList.add('hidden');
+            document.getElementById('scanStatus').textContent = 'Scan stopped';
+        });
+        
+        console.log('🎯 Auto scan test page loaded');
+    </script>
+</body>
+</html>

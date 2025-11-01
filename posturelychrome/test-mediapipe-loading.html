@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaPipe Loading Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .status {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 20px auto;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+        }
+        
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>MediaPipe Loading Test</h1>
+    
+    <div class="test-section">
+        <h2>MediaPipe Import Test</h2>
+        <button id="testImport" class="button">Test MediaPipe Import</button>
+        <div id="importStatus" class="status">
+            Click "Test MediaPipe Import" to check if MediaPipe can be loaded...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>MediaPipe Initialization Test</h2>
+        <button id="testInit" class="button" disabled>Test MediaPipe Initialization</button>
+        <div id="initStatus" class="status">
+            Import MediaPipe first...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Camera + MediaPipe Test</h2>
+        <button id="testCamera" class="button" disabled>Test Camera + MediaPipe</button>
+        <button id="stopCamera" class="button" disabled>Stop Camera</button>
+        <div id="cameraStatus" class="status">
+            Initialize MediaPipe first...
+        </div>
+        
+        <div class="video-container hidden" id="videoContainer">
+            <video id="testVideo" autoplay playsinline muted></video>
+            <canvas id="testCanvas"></canvas>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Pose Detection Test</h2>
+        <button id="testPose" class="button" disabled>Test Pose Detection</button>
+        <div id="poseStatus" class="status">
+            Setup camera first...
+        </div>
+    </div>
+
+    <script>
+        let tv = null;
+        let landmarker = null;
+        let currentStream = null;
+        let poseDetectionRunning = false;
+        
+        // DOM elements
+        const testImport = document.getElementById('testImport');
+        const testInit = document.getElementById('testInit');
+        const testCamera = document.getElementById('testCamera');
+        const stopCamera = document.getElementById('stopCamera');
+        const testPose = document.getElementById('testPose');
+        const importStatus = document.getElementById('importStatus');
+        const initStatus = document.getElementById('initStatus');
+        const cameraStatus = document.getElementById('cameraStatus');
+        const poseStatus = document.getElementById('poseStatus');
+        const videoContainer = document.getElementById('videoContainer');
+        const video = document.getElementById('testVideo');
+        const canvas = document.getElementById('testCanvas');
+        
+        // Test MediaPipe import
+        testImport.addEventListener('click', async () => {
+            try {
+                importStatus.innerHTML = '🔄 Testing MediaPipe import...';
+                importStatus.className = 'status';
+                
+                // Dynamically import the ES module from the extension package
+                const visionBundleUrl = chrome.runtime.getURL('mediapipe/vision_bundle.mjs');
+                console.log('Importing from:', visionBundleUrl);
+                
+                tv = await import(visionBundleUrl);
+                
+                if (!tv) {
+                    throw new Error('Import returned null');
+                }
+                
+                if (!tv.FilesetResolver) {
+                    throw new Error('FilesetResolver not found in imported module');
+                }
+                
+                if (!tv.PoseLandmarker) {
+                    throw new Error('PoseLandmarker not found in imported module');
+                }
+                
+                importStatus.innerHTML = `
+                    ✅ MediaPipe import successful!<br>
+                    FilesetResolver: ${typeof tv.FilesetResolver}<br>
+                    PoseLandmarker: ${typeof tv.PoseLandmarker}<br>
+                    Available methods: ${Object.keys(tv).join(', ')}
+                `;
+                importStatus.className = 'status success';
+                
+                // Enable next test
+                testInit.disabled = false;
+                initStatus.innerHTML = 'Ready to test MediaPipe initialization...';
+                
+            } catch (error) {
+                importStatus.innerHTML = `❌ MediaPipe import failed: ${error.message}`;
+                importStatus.className = 'status error';
+                console.error('MediaPipe import error:', error);
+            }
+        });
+        
+        // Test MediaPipe initialization
+        testInit.addEventListener('click', async () => {
+            try {
+                initStatus.innerHTML = '🔄 Testing MediaPipe initialization...';
+                initStatus.className = 'status';
+                
+                const wasmRoot = chrome.runtime.getURL('mediapipe/wasm');
+                const modelPath = chrome.runtime.getURL('mediapipe/models/pose_landmarker_lite.task');
+                
+                console.log('WASM root:', wasmRoot);
+                console.log('Model path:', modelPath);
+                
+                const vision = await tv.FilesetResolver.forVisionTasks(wasmRoot);
+                console.log('Vision fileset resolver created:', vision);
+                
+                landmarker = await tv.PoseLandmarker.createFromOptions(vision, {
+                    baseOptions: { modelAssetPath: modelPath },
+                    runningMode: 'VIDEO',
+                    numPoses: 1,
+                    minPoseDetectionConfidence: 0.5,
+                    minPosePresenceConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+                
+                console.log('PoseLandmarker created:', landmarker);
+                
+                initStatus.innerHTML = `
+                    ✅ MediaPipe initialization successful!<br>
+                    Landmarker created: ${!!landmarker}<br>
+                    WASM root: ${wasmRoot}<br>
+                    Model path: ${modelPath}
+                `;
+                initStatus.className = 'status success';
+                
+                // Enable next test
+                testCamera.disabled = false;
+                cameraStatus.innerHTML = 'Ready to test camera + MediaPipe...';
+                
+            } catch (error) {
+                initStatus.innerHTML = `❌ MediaPipe initialization failed: ${error.message}`;
+                initStatus.className = 'status error';
+                console.error('MediaPipe initialization error:', error);
+            }
+        });
+        
+        // Test camera + MediaPipe
+        testCamera.addEventListener('click', async () => {
+            try {
+                cameraStatus.innerHTML = '🔄 Setting up camera...';
+                cameraStatus.className = 'status';
+                
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }
+                });
+                
+                video.srcObject = stream;
+                currentStream = stream;
+                
+                // Wait for video to load
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        canvas.width = video.videoWidth || 640;
+                        canvas.height = video.videoHeight || 480;
+                        resolve();
+                    };
+                });
+                
+                videoContainer.classList.remove('hidden');
+                cameraStatus.innerHTML = `
+                    ✅ Camera setup successful!<br>
+                    Video dimensions: ${video.videoWidth}x${video.videoHeight}<br>
+                    Canvas dimensions: ${canvas.width}x${canvas.height}
+                `;
+                cameraStatus.className = 'status success';
+                
+                // Enable controls
+                testCamera.disabled = true;
+                stopCamera.disabled = false;
+                testPose.disabled = false;
+                poseStatus.innerHTML = 'Ready to test pose detection...';
+                
+            } catch (error) {
+                cameraStatus.innerHTML = `❌ Camera setup failed: ${error.message}`;
+                cameraStatus.className = 'status error';
+                console.error('Camera setup error:', error);
+            }
+        });
+        
+        // Stop camera
+        stopCamera.addEventListener('click', () => {
+            poseDetectionRunning = false;
+            
+            if (currentStream) {
+                const tracks = currentStream.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+                currentStream = null;
+            }
+            
+            videoContainer.classList.add('hidden');
+            cameraStatus.innerHTML = '⏹️ Camera stopped';
+            cameraStatus.className = 'status';
+            
+            // Reset controls
+            testCamera.disabled = false;
+            stopCamera.disabled = true;
+            testPose.disabled = true;
+            poseStatus.innerHTML = 'Setup camera first...';
+        });
+        
+        // Test pose detection
+        testPose.addEventListener('click', async () => {
+            try {
+                poseStatus.innerHTML = '🔄 Testing pose detection...';
+                poseStatus.className = 'status';
+                
+                if (!landmarker) {
+                    throw new Error('PoseLandmarker not initialized');
+                }
+                
+                if (video.readyState < 2) {
+                    throw new Error('Video not ready');
+                }
+                
+                // Test single pose detection
+                const startTimeMs = performance.now();
+                const result = landmarker.detectForVideo(video, startTimeMs);
+                
+                console.log('Pose detection result:', result);
+                
+                const landmarks = result.landmarks && result.landmarks[0];
+                const landmarkCount = landmarks ? landmarks.length : 0;
+                
+                // Draw pose if detected
+                if (landmarks && landmarks.length > 0) {
+                    drawPose(landmarks);
+                }
+                
+                poseStatus.innerHTML = `
+                    ✅ Pose detection successful!<br>
+                    Poses detected: ${result.landmarks?.length || 0}<br>
+                    Landmarks per pose: ${landmarkCount}<br>
+                    Detection time: ${(performance.now() - startTimeMs).toFixed(2)}ms<br>
+                    <button onclick="startContinuousDetection()" style="margin-top: 10px; padding: 5px 10px;">Start Continuous Detection</button>
+                `;
+                poseStatus.className = 'status success';
+                
+            } catch (error) {
+                poseStatus.innerHTML = `❌ Pose detection failed: ${error.message}`;
+                poseStatus.className = 'status error';
+                console.error('Pose detection error:', error);
+            }
+        });
+        
+        // Draw pose landmarks
+        function drawPose(landmarks) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#00ff00';
+            landmarks.forEach((landmark, index) => {
+                if (landmark.visibility > 0.5) {
+                    const x = landmark.x * canvas.width;
+                    const y = landmark.y * canvas.height;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Label key landmarks
+                    if (index === 0) { // Nose
+                        ctx.fillText('Nose', x + 5, y - 5);
+                    } else if (index === 11) { // Left shoulder
+                        ctx.fillText('L.Shoulder', x + 5, y - 5);
+                    } else if (index === 12) { // Right shoulder
+                        ctx.fillText('R.Shoulder', x + 5, y - 5);
+                    }
+                }
+            });
+        }
+        
+        // Continuous detection
+        window.startContinuousDetection = () => {
+            poseDetectionRunning = true;
+            let frameCount = 0;
+            
+            const detectLoop = async () => {
+                if (poseDetectionRunning && video.readyState >= 2) {
+                    try {
+                        const startTimeMs = performance.now();
+                        const result = landmarker.detectForVideo(video, startTimeMs);
+                        
+                        if (result.landmarks && result.landmarks[0]) {
+                            drawPose(result.landmarks[0]);
+                        }
+                        
+                        frameCount++;
+                        if (frameCount % 30 === 0) { // Update every 30 frames
+                            poseStatus.innerHTML = `
+                                🔄 Continuous detection running...<br>
+                                Frames processed: ${frameCount}<br>
+                                Current poses: ${result.landmarks?.length || 0}<br>
+                                <button onclick="stopContinuousDetection()" style="margin-top: 10px; padding: 5px 10px;">Stop Continuous Detection</button>
+                            `;
+                        }
+                        
+                    } catch (error) {
+                        console.error('Continuous detection error:', error);
+                    }
+                }
+                
+                if (poseDetectionRunning) {
+                    requestAnimationFrame(detectLoop);
+                }
+            };
+            
+            requestAnimationFrame(detectLoop);
+        };
+        
+        window.stopContinuousDetection = () => {
+            poseDetectionRunning = false;
+            poseStatus.innerHTML = `
+                ⏹️ Continuous detection stopped<br>
+                <button onclick="startContinuousDetection()" style="margin-top: 10px; padding: 5px 10px;">Start Continuous Detection</button>
+            `;
+        };
+    </script>
+</body>
+</html>

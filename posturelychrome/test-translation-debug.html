@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+        pre {
+            background: #f7f7f7;
+            padding: 10px;
+            border-radius: 3px;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Translation Debug Test</h1>
+    <p>This page tests if Chrome's Translator API is actually working or just reporting availability.</p>
+
+    <button onclick="testBasicTranslation()">Test Basic Translation</button>
+    <button onclick="testMultipleLanguages()">Test Multiple Languages</button>
+    <button onclick="testCommonPhrases()">Test Common Phrases</button>
+
+    <div id="results"></div>
+
+    <script>
+        async function testBasicTranslation() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="info">Testing basic translation...</div>';
+            
+            try {
+                if (typeof Translator === 'undefined') {
+                    resultsDiv.innerHTML = '<div class="error">❌ Translator API not available</div>';
+                    return;
+                }
+                
+                // Test Hindi translation
+                const availability = await Translator.availability({
+                    sourceLanguage: 'en',
+                    targetLanguage: 'hi'
+                });
+                
+                let output = `Hindi availability: ${availability}\n`;
+                
+                if (availability === 'unavailable') {
+                    resultsDiv.innerHTML = '<div class="error">❌ Hindi translation unavailable</div>';
+                    return;
+                }
+                
+                const translator = await Translator.create({
+                    sourceLanguage: 'en',
+                    targetLanguage: 'hi'
+                });
+                
+                // Test multiple phrases
+                const testPhrases = [
+                    'Hello',
+                    'Select Language',
+                    'Good morning',
+                    'Thank you',
+                    'Settings'
+                ];
+                
+                let allWorking = true;
+                
+                for (const phrase of testPhrases) {
+                    try {
+                        const result = await translator.translate({ text: phrase });
+                        const translated = result.output;
+                        
+                        output += `"${phrase}" -> "${translated}"\n`;
+                        
+                        if (translated === phrase) {
+                            output += `⚠️ No translation occurred for "${phrase}"\n`;
+                            allWorking = false;
+                        } else {
+                            output += `✅ Translation successful for "${phrase}"\n`;
+                        }
+                    } catch (error) {
+                        output += `❌ Error translating "${phrase}": ${error.message}\n`;
+                        allWorking = false;
+                    }
+                }
+                
+                const resultClass = allWorking ? 'success' : 'warning';
+                const resultIcon = allWorking ? '✅' : '⚠️';
+                
+                resultsDiv.innerHTML = `
+                    <div class="${resultClass}">${resultIcon} Translation test completed</div>
+                    <pre>${output}</pre>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">❌ Test failed: ${error.message}</div>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+
+        async function testMultipleLanguages() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="info">Testing multiple languages...</div>';
+            
+            const languages = ['es', 'fr', 'de', 'ja', 'hi'];
+            let output = '';
+            
+            try {
+                for (const lang of languages) {
+                    const availability = await Translator.availability({
+                        sourceLanguage: 'en',
+                        targetLanguage: lang
+                    });
+                    
+                    output += `${lang}: ${availability}\n`;
+                    
+                    if (availability !== 'unavailable') {
+                        try {
+                            const translator = await Translator.create({
+                                sourceLanguage: 'en',
+                                targetLanguage: lang
+                            });
+                            
+                            const result = await translator.translate({ text: 'Hello' });
+                            output += `  "Hello" -> "${result.output}"\n`;
+                            
+                            if (result.output === 'Hello') {
+                                output += `  ⚠️ No actual translation\n`;
+                            } else {
+                                output += `  ✅ Translation working\n`;
+                            }
+                        } catch (error) {
+                            output += `  ❌ Error: ${error.message}\n`;
+                        }
+                    }
+                    output += '\n';
+                }
+                
+                resultsDiv.innerHTML = `
+                    <div class="info">Multiple language test completed</div>
+                    <pre>${output}</pre>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">❌ Test failed: ${error.message}</div>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+
+        async function testCommonPhrases() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="info">Testing common UI phrases...</div>';
+            
+            const phrases = [
+                'Select Language',
+                'Settings',
+                'Cancel',
+                'Save',
+                'Delete',
+                'Edit',
+                'Close',
+                'Open',
+                'Start',
+                'Stop'
+            ];
+            
+            try {
+                const translator = await Translator.create({
+                    sourceLanguage: 'en',
+                    targetLanguage: 'hi'
+                });
+                
+                let output = 'Testing common UI phrases in Hindi:\n\n';
+                let translatedCount = 0;
+                
+                for (const phrase of phrases) {
+                    try {
+                        const result = await translator.translate({ text: phrase });
+                        const translated = result.output;
+                        
+                        output += `"${phrase}" -> "${translated}"`;
+                        
+                        if (translated !== phrase) {
+                            output += ' ✅\n';
+                            translatedCount++;
+                        } else {
+                            output += ' ⚠️ (no translation)\n';
+                        }
+                    } catch (error) {
+                        output += `"${phrase}" -> ERROR: ${error.message}\n`;
+                    }
+                }
+                
+                output += `\nSummary: ${translatedCount}/${phrases.length} phrases translated successfully`;
+                
+                const resultClass = translatedCount > 0 ? 'success' : 'warning';
+                
+                resultsDiv.innerHTML = `
+                    <div class="${resultClass}">Common phrases test completed</div>
+                    <pre>${output}</pre>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">❌ Test failed: ${error.message}</div>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

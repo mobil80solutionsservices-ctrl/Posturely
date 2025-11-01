@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercise Camera Setup Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 20px auto;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+        }
+        
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Exercise Camera Setup Test</h1>
+    
+    <div class="test-section">
+        <h2>Camera Access Test</h2>
+        <button id="setupCamera" class="button">Setup Camera</button>
+        <button id="stopCamera" class="button" disabled>Stop Camera</button>
+        <div id="cameraStatus" class="status">
+            Click "Setup Camera" to test camera access...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Video Feed</h2>
+        <div class="video-container hidden" id="videoContainer">
+            <video id="exerciseVideo" autoplay playsinline muted></video>
+            <canvas id="exerciseCanvas"></canvas>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>MediaPipe Test</h2>
+        <button id="testMediaPipe" class="button" disabled>Test MediaPipe</button>
+        <div id="mediaPipeStatus" class="status">
+            Setup camera first...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Exercise Environment Test</h2>
+        <button id="testEnvironment" class="button" disabled>Test Full Environment Setup</button>
+        <div id="environmentStatus" class="status">
+            Setup camera first...
+        </div>
+    </div>
+
+    <script>
+        // Mock chrome.runtime.getURL for testing
+        if (typeof chrome === 'undefined') {
+            window.chrome = {
+                runtime: {
+                    getURL: (path) => `./${path}`
+                }
+            };
+        }
+        
+        let currentStream = null;
+        
+        // DOM elements
+        const setupCamera = document.getElementById('setupCamera');
+        const stopCamera = document.getElementById('stopCamera');
+        const testMediaPipe = document.getElementById('testMediaPipe');
+        const testEnvironment = document.getElementById('testEnvironment');
+        const cameraStatus = document.getElementById('cameraStatus');
+        const mediaPipeStatus = document.getElementById('mediaPipeStatus');
+        const environmentStatus = document.getElementById('environmentStatus');
+        const videoContainer = document.getElementById('videoContainer');
+        const video = document.getElementById('exerciseVideo');
+        const canvas = document.getElementById('exerciseCanvas');
+        
+        // Setup camera
+        setupCamera.addEventListener('click', async () => {
+            try {
+                cameraStatus.innerHTML = '🔄 Setting up camera...';
+                cameraStatus.className = 'status';
+                
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }
+                });
+                
+                video.srcObject = stream;
+                currentStream = stream;
+                
+                // Wait for video to load
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        canvas.width = video.videoWidth || 640;
+                        canvas.height = video.videoHeight || 480;
+                        resolve();
+                    };
+                });
+                
+                videoContainer.classList.remove('hidden');
+                cameraStatus.innerHTML = '✅ Camera setup successful!';
+                cameraStatus.className = 'status success';
+                
+                // Enable other tests
+                setupCamera.disabled = true;
+                stopCamera.disabled = false;
+                testMediaPipe.disabled = false;
+                testEnvironment.disabled = false;
+                
+                mediaPipeStatus.innerHTML = 'Ready to test MediaPipe...';
+                environmentStatus.innerHTML = 'Ready to test full environment...';
+                
+            } catch (error) {
+                cameraStatus.innerHTML = `❌ Camera setup failed: ${error.message}`;
+                cameraStatus.className = 'status error';
+                console.error('Camera setup error:', error);
+            }
+        });
+        
+        // Stop camera
+        stopCamera.addEventListener('click', () => {
+            if (currentStream) {
+                const tracks = currentStream.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+                currentStream = null;
+            }
+            
+            videoContainer.classList.add('hidden');
+            cameraStatus.innerHTML = '⏹️ Camera stopped';
+            cameraStatus.className = 'status';
+            
+            // Reset buttons
+            setupCamera.disabled = false;
+            stopCamera.disabled = true;
+            testMediaPipe.disabled = true;
+            testEnvironment.disabled = true;
+            
+            mediaPipeStatus.innerHTML = 'Setup camera first...';
+            environmentStatus.innerHTML = 'Setup camera first...';
+        });
+        
+        // Test MediaPipe
+        testMediaPipe.addEventListener('click', async () => {
+            try {
+                mediaPipeStatus.innerHTML = '🔄 Testing MediaPipe...';
+                mediaPipeStatus.className = 'status';
+                
+                // Check if MediaPipe is available
+                if (typeof window.MediaPipeTasksVision === 'undefined') {
+                    mediaPipeStatus.innerHTML = '⚠️ MediaPipe Tasks Vision not available - exercises will use simulation mode';
+                    mediaPipeStatus.className = 'status';
+                    return;
+                }
+                
+                const tv = window.MediaPipeTasksVision;
+                const wasmRoot = chrome.runtime.getURL('mediapipe/wasm');
+                const modelPath = chrome.runtime.getURL('mediapipe/models/pose_landmarker_lite.task');
+                
+                const vision = await tv.FilesetResolver.forVisionTasks(wasmRoot);
+                const landmarker = await tv.PoseLandmarker.createFromOptions(vision, {
+                    baseOptions: { modelAssetPath: modelPath },
+                    runningMode: 'VIDEO',
+                    numPoses: 1,
+                    minPoseDetectionConfidence: 0.5,
+                    minPosePresenceConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+                
+                // Test pose detection
+                const startTimeMs = performance.now();
+                const result = landmarker.detectForVideo(video, startTimeMs);
+                
+                mediaPipeStatus.innerHTML = `✅ MediaPipe working! Detected ${result.landmarks?.length || 0} poses`;
+                mediaPipeStatus.className = 'status success';
+                
+            } catch (error) {
+                mediaPipeStatus.innerHTML = `❌ MediaPipe test failed: ${error.message}`;
+                mediaPipeStatus.className = 'status error';
+                console.error('MediaPipe test error:', error);
+            }
+        });
+        
+        // Test full environment
+        testEnvironment.addEventListener('click', async () => {
+            try {
+                environmentStatus.innerHTML = '🔄 Testing full exercise environment...';
+                environmentStatus.className = 'status';
+                
+                // Simulate the full setup process
+                let steps = [];
+                
+                // Check camera
+                if (video.srcObject) {
+                    steps.push('✅ Camera access');
+                } else {
+                    steps.push('❌ Camera not available');
+                }
+                
+                // Check video dimensions
+                if (video.videoWidth && video.videoHeight) {
+                    steps.push(`✅ Video dimensions: ${video.videoWidth}x${video.videoHeight}`);
+                } else {
+                    steps.push('❌ Video dimensions not available');
+                }
+                
+                // Check canvas
+                if (canvas.width && canvas.height) {
+                    steps.push(`✅ Canvas dimensions: ${canvas.width}x${canvas.height}`);
+                } else {
+                    steps.push('❌ Canvas not properly sized');
+                }
+                
+                // Check MediaPipe availability
+                if (typeof window.MediaPipeTasksVision !== 'undefined') {
+                    steps.push('✅ MediaPipe Tasks Vision available');
+                } else {
+                    steps.push('⚠️ MediaPipe not available (simulation mode)');
+                }
+                
+                environmentStatus.innerHTML = `
+                    <strong>Environment Test Results:</strong><br>
+                    ${steps.join('<br>')}
+                `;
+                
+                const allGood = steps.every(step => step.startsWith('✅') || step.startsWith('⚠️'));
+                environmentStatus.className = allGood ? 'status success' : 'status error';
+                
+            } catch (error) {
+                environmentStatus.innerHTML = `❌ Environment test failed: ${error.message}`;
+                environmentStatus.className = 'status error';
+                console.error('Environment test error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .language-selector {
+            margin: 10px 0;
+        }
+        select {
+            padding: 5px 10px;
+            margin: 0 10px;
+        }
+        button {
+            padding: 8px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .translatable-text {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Translation System Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>Translation API Status</h2>
+        <div id="apiStatus" class="status">Checking...</div>
+        <button onclick="checkTranslationAPI()">Recheck API</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Language Selection</h2>
+        <div class="language-selector">
+            <label for="languageSelect">Select Language:</label>
+            <select id="languageSelect">
+                <option value="en">English</option>
+                <option value="hi">Hindi (हिन्दी)</option>
+                <option value="es">Spanish (Español)</option>
+                <option value="fr">French (Français)</option>
+                <option value="de">German (Deutsch)</option>
+                <option value="ja">Japanese (日本語)</option>
+            </select>
+            <button onclick="translateInterface()">Translate Interface</button>
+        </div>
+        <div id="translationStatus" class="status" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Sample Interface Elements</h2>
+        <div class="translatable-text" data-translate="title">Posturely</div>
+        <div class="translatable-text" data-translate="start-tracking">Start tracking</div>
+        <div class="translatable-text" data-translate="full-body-scan">📷 Full Body Scan</div>
+        <div class="translatable-text" data-translate="view-past-data">📊 View Past Data</div>
+        <div class="translatable-text" data-translate="score-label">Current Posture Score</div>
+        <div class="translatable-text" data-translate="mood-title">How are you feeling?</div>
+        <div class="translatable-text" data-translate="goals-title">Daily Goals</div>
+        <div class="translatable-text" data-translate="badges-title">Achievements</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Direct Translation Test</h2>
+        <input type="text" id="testText" placeholder="Enter text to translate" value="Hello, how are you today?">
+        <button onclick="testDirectTranslation()">Translate Text</button>
+        <div id="translationResult" class="status" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        import { LocalizationService } from './src/LocalizationService.js';
+        import { EnhancedLanguageManager } from './src/EnhancedLanguageManager.js';
+
+        let localizationService;
+        let languageManager;
+
+        // Initialize services
+        async function initializeServices() {
+            try {
+                localizationService = new LocalizationService();
+                languageManager = new EnhancedLanguageManager();
+                
+                await localizationService.initialize();
+                await languageManager.initialize();
+                
+                console.log('Services initialized successfully');
+                
+                // Set up language change listener
+                document.addEventListener('languageChanged', async (event) => {
+                    console.log('Language changed event received:', event.detail);
+                    await localizationService.translateCurrentInterface();
+                    showStatus('translationStatus', `Interface translated to ${event.detail.languageName}`, 'success');
+                });
+                
+            } catch (error) {
+                console.error('Failed to initialize services:', error);
+                showStatus('apiStatus', `Initialization failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Check Translation API availability
+        window.checkTranslationAPI = async function() {
+            const statusDiv = document.getElementById('apiStatus');
+            
+            try {
+                // Check if Translator API is available
+                if (typeof Translator === 'undefined') {
+                    showStatus('apiStatus', 'Chrome Translator API not available. Make sure you\'re using Chrome 127+ with AI features enabled.', 'error');
+                    return;
+                }
+
+                // Test basic availability
+                const availability = await Translator.availability({
+                    sourceLanguage: 'en',
+                    targetLanguage: 'hi'
+                });
+
+                console.log('Hindi translation availability:', availability);
+
+                if (availability === 'available') {
+                    showStatus('apiStatus', 'Translation API is available and ready to use!', 'success');
+                } else if (availability === 'after-download') {
+                    showStatus('apiStatus', 'Translation API available but requires model download', 'warning');
+                } else {
+                    showStatus('apiStatus', `Translation API status: ${availability}`, 'warning');
+                }
+
+            } catch (error) {
+                console.error('Translation API check failed:', error);
+                showStatus('apiStatus', `API check failed: ${error.message}`, 'error');
+            }
+        };
+
+        // Translate interface
+        window.translateInterface = async function() {
+            const languageSelect = document.getElementById('languageSelect');
+            const selectedLanguage = languageSelect.value;
+            
+            showStatus('translationStatus', 'Translating interface...', 'warning');
+            
+            try {
+                if (selectedLanguage === 'en') {
+                    // Restore original text
+                    const translatableElements = document.querySelectorAll('[data-translate]');
+                    translatableElements.forEach(element => {
+                        if (element.dataset.originalText) {
+                            element.textContent = element.dataset.originalText;
+                            delete element.dataset.originalText;
+                        }
+                    });
+                    showStatus('translationStatus', 'Interface restored to English', 'success');
+                    return;
+                }
+
+                // Download language model if needed
+                if (languageManager && !languageManager.canSelectLanguage(selectedLanguage)) {
+                    showStatus('translationStatus', `Downloading ${selectedLanguage} language model...`, 'warning');
+                    await languageManager.downloadLanguageModel(selectedLanguage, (progress) => {
+                        showStatus('translationStatus', `Downloading ${selectedLanguage}: ${progress}%`, 'warning');
+                    });
+                }
+
+                // Translate each element
+                const translatableElements = document.querySelectorAll('[data-translate]');
+                for (const element of translatableElements) {
+                    const originalText = element.dataset.originalText || element.textContent;
+                    if (!element.dataset.originalText) {
+                        element.dataset.originalText = originalText;
+                    }
+                    
+                    const translatedText = await localizationService.getTranslation(originalText, selectedLanguage);
+                    element.textContent = translatedText;
+                }
+
+                showStatus('translationStatus', `Interface translated to ${selectedLanguage}`, 'success');
+
+            } catch (error) {
+                console.error('Translation failed:', error);
+                showStatus('translationStatus', `Translation failed: ${error.message}`, 'error');
+            }
+        };
+
+        // Test direct translation
+        window.testDirectTranslation = async function() {
+            const testText = document.getElementById('testText').value;
+            const languageSelect = document.getElementById('languageSelect');
+            const targetLanguage = languageSelect.value;
+            
+            if (targetLanguage === 'en') {
+                showStatus('translationResult', 'Select a target language other than English', 'warning');
+                return;
+            }
+
+            showStatus('translationResult', 'Translating...', 'warning');
+            
+            try {
+                const translatedText = await localizationService.getTranslation(testText, targetLanguage);
+                showStatus('translationResult', `Original: "${testText}"<br>Translated: "${translatedText}"`, 'success');
+            } catch (error) {
+                console.error('Direct translation failed:', error);
+                showStatus('translationResult', `Translation failed: ${error.message}`, 'error');
+            }
+        };
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.className = `status ${type}`;
+            element.style.display = 'block';
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initializeServices();
+            await checkTranslationAPI();
+        });
+    </script>
+</body>
+</html>

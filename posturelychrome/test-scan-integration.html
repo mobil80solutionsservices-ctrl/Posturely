@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Scan Integration</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .button {
+            padding: 12px 20px;
+            margin: 8px;
+            border: none;
+            border-radius: 8px;
+            background: #007AFF;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .button:hover {
+            background: #0056CC;
+        }
+        
+        .button.secondary {
+            background: #6C757D;
+        }
+        
+        .button.secondary:hover {
+            background: #545B62;
+        }
+        
+        .results {
+            margin-top: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007AFF;
+        }
+        
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Scan Integration Test</h1>
+        <p>This page tests the complete scan workflow: capture → save → display in analytics.</p>
+        
+        <div>
+            <button id="simulateScan" class="button">📸 Simulate Full Body Scan</button>
+            <button id="checkHistory" class="button secondary">📊 Check Scan History</button>
+            <button id="clearHistory" class="button secondary">🗑️ Clear History</button>
+            <button id="openAnalytics" class="button secondary">📈 Open Analytics</button>
+        </div>
+        
+        <div id="results" class="results" style="display: none;">
+            <h3>Test Results</h3>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Simulate a complete scan workflow
+        document.getElementById('simulateScan').addEventListener('click', async () => {
+            showResults('Running scan simulation...', 'info');
+            
+            try {
+                // Simulate scan results
+                const mockAnalysisResults = {
+                    combinedMetrics: {
+                        postureScore: Math.floor(Math.random() * 40) + 60, // 60-100
+                        frontViewScore: Math.floor(Math.random() * 40) + 60,
+                        sideViewScore: Math.floor(Math.random() * 40) + 60,
+                        neckTilt: (Math.random() - 0.5) * 30, // -15 to +15
+                        shoulderTilt: (Math.random() - 0.5) * 20, // -10 to +10
+                        hipTilt: (Math.random() - 0.5) * 10, // -5 to +5
+                        forwardHeadPosture: Math.random() * 20, // 0 to 20
+                        overallAlignment: Math.floor(Math.random() * 40) + 60
+                    },
+                    aiReport: `
+                        <p><strong>Simulated AI Analysis:</strong></p>
+                        <p>This is a test scan showing ${Math.random() > 0.5 ? 'good' : 'fair'} posture alignment.</p>
+                        <p><strong>Key findings:</strong> Simulated posture analysis complete.</p>
+                    `
+                };
+                
+                // Save to scan history (simulating ScanPageController.saveScanToHistory)
+                await saveScanToHistory(mockAnalysisResults);
+                
+                showResults('✅ Scan simulation complete! Results saved to history.', 'success');
+                
+            } catch (error) {
+                showResults(`❌ Scan simulation failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Check scan history
+        document.getElementById('checkHistory').addEventListener('click', () => {
+            chrome.storage.local.get(['scanHistory'], (result) => {
+                const scanHistory = result.scanHistory || [];
+                
+                if (scanHistory.length === 0) {
+                    showResults('📷 No scans in history. Run a scan simulation first.', 'info');
+                } else {
+                    const latest = scanHistory[scanHistory.length - 1];
+                    const date = new Date(latest.timestamp);
+                    
+                    const historyInfo = `
+                        <p><strong>📊 Scan History Summary:</strong></p>
+                        <p>Total scans: ${scanHistory.length}</p>
+                        <p>Latest scan: ${date.toLocaleString()}</p>
+                        <p>Latest score: ${latest.overallScore}/100</p>
+                        <p>Views captured: ${latest.views ? latest.views.join(', ') : 'N/A'}</p>
+                        <p>Recommendations: ${latest.recommendations ? latest.recommendations.length : 0}</p>
+                    `;
+                    
+                    showResults(historyInfo, 'success');
+                }
+            });
+        });
+        
+        // Clear history
+        document.getElementById('clearHistory').addEventListener('click', () => {
+            chrome.storage.local.remove(['scanHistory'], () => {
+                showResults('🗑️ Scan history cleared successfully.', 'success');
+            });
+        });
+        
+        // Open analytics page
+        document.getElementById('openAnalytics').addEventListener('click', () => {
+            const analyticsUrl = chrome.runtime.getURL('analytics.html');
+            window.open(analyticsUrl, '_blank');
+        });
+        
+        // Save scan to history (copied from ScanPageController)
+        async function saveScanToHistory(analysisResults) {
+            const scanRecord = {
+                timestamp: Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                overallScore: analysisResults.combinedMetrics.postureScore,
+                frontViewScore: analysisResults.combinedMetrics.frontViewScore,
+                sideViewScore: analysisResults.combinedMetrics.sideViewScore,
+                metrics: {
+                    neckTilt: analysisResults.combinedMetrics.neckTilt,
+                    shoulderTilt: analysisResults.combinedMetrics.shoulderTilt,
+                    hipTilt: analysisResults.combinedMetrics.hipTilt,
+                    forwardHeadPosture: analysisResults.combinedMetrics.forwardHeadPosture,
+                    overallAlignment: analysisResults.combinedMetrics.overallAlignment
+                },
+                views: ['front', 'side'],
+                aiReport: analysisResults.aiReport,
+                recommendations: generateRecommendations(analysisResults.combinedMetrics)
+            };
+            
+            return new Promise((resolve, reject) => {
+                chrome.storage.local.get(['scanHistory'], (result) => {
+                    if (chrome.runtime.lastError) {
+                        reject(chrome.runtime.lastError);
+                        return;
+                    }
+                    
+                    const scanHistory = result.scanHistory || [];
+                    scanHistory.push(scanRecord);
+                    
+                    // Keep only last 50 scans
+                    if (scanHistory.length > 50) {
+                        scanHistory.splice(0, scanHistory.length - 50);
+                    }
+                    
+                    chrome.storage.local.set({ scanHistory }, () => {
+                        if (chrome.runtime.lastError) {
+                            reject(chrome.runtime.lastError);
+                        } else {
+                            console.log('✅ Scan saved to history');
+                            resolve();
+                        }
+                    });
+                });
+            });
+        }
+        
+        // Generate recommendations (copied from ScanPageController)
+        function generateRecommendations(metrics) {
+            const recommendations = [];
+            
+            if (Math.abs(metrics.neckTilt) > 10) {
+                recommendations.push('Practice neck alignment exercises to reduce forward head posture');
+            }
+            
+            if (Math.abs(metrics.shoulderTilt) > 5) {
+                recommendations.push('Focus on shoulder blade strengthening exercises');
+            }
+            
+            if (Math.abs(metrics.hipTilt) > 5) {
+                recommendations.push('Work on hip flexor stretches and core strengthening');
+            }
+            
+            if (metrics.postureScore < 70) {
+                recommendations.push('Consider taking regular posture breaks throughout the day');
+            }
+            
+            if (recommendations.length === 0) {
+                recommendations.push('Great posture! Keep up the good work with regular movement breaks');
+            }
+            
+            return recommendations;
+        }
+        
+        // Show results helper
+        function showResults(content, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const contentDiv = document.getElementById('resultContent');
+            
+            resultsDiv.className = `results ${type}`;
+            contentDiv.innerHTML = content;
+            resultsDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

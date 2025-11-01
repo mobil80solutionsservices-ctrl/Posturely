@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CalibrationManager Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>CalibrationManager Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>Initialization Test</h2>
+        <button id="initTest" class="button">Test ExerciseOrchestrator Initialization</button>
+        <div id="initStatus" class="status">
+            Click the button to test initialization...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Exercise Start Test</h2>
+        <button id="sitTallTest" class="button" disabled>Test Sit Tall Exercise</button>
+        <button id="neckRotationTest" class="button" disabled>Test Neck Rotation Exercise</button>
+        <button id="neckTiltTest" class="button" disabled>Test Neck Tilt Exercise</button>
+        <div id="exerciseStatus" class="status">
+            Initialize the orchestrator first...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Manager Status</h2>
+        <div id="managerStatus" class="status">
+            No status available yet...
+        </div>
+    </div>
+
+    <script type="module">
+        import { ExerciseOrchestrator } from './src/ExerciseOrchestrator.js';
+        
+        let orchestrator = null;
+        
+        // DOM elements
+        const initTest = document.getElementById('initTest');
+        const sitTallTest = document.getElementById('sitTallTest');
+        const neckRotationTest = document.getElementById('neckRotationTest');
+        const neckTiltTest = document.getElementById('neckTiltTest');
+        const initStatus = document.getElementById('initStatus');
+        const exerciseStatus = document.getElementById('exerciseStatus');
+        const managerStatus = document.getElementById('managerStatus');
+        
+        // Test initialization
+        initTest.addEventListener('click', async () => {
+            try {
+                initStatus.innerHTML = '🔄 Initializing ExerciseOrchestrator...';
+                initStatus.className = 'status';
+                
+                orchestrator = new ExerciseOrchestrator();
+                await orchestrator.initialize();
+                
+                initStatus.innerHTML = '✅ ExerciseOrchestrator initialized successfully!';
+                initStatus.className = 'status success';
+                
+                // Enable exercise buttons
+                sitTallTest.disabled = false;
+                neckRotationTest.disabled = false;
+                neckTiltTest.disabled = false;
+                
+                exerciseStatus.innerHTML = 'Ready to test exercises. Click any exercise button above.';
+                
+                updateManagerStatus();
+                
+            } catch (error) {
+                initStatus.innerHTML = `❌ Initialization failed: ${error.message}`;
+                initStatus.className = 'status error';
+                console.error('Initialization error:', error);
+            }
+        });
+        
+        // Test exercises
+        sitTallTest.addEventListener('click', () => testExercise('sit-tall'));
+        neckRotationTest.addEventListener('click', () => testExercise('neck-rotation'));
+        neckTiltTest.addEventListener('click', () => testExercise('neck-tilt'));
+        
+        async function testExercise(exerciseType) {
+            try {
+                exerciseStatus.innerHTML = `🔄 Starting ${exerciseType} exercise...`;
+                exerciseStatus.className = 'status';
+                
+                if (!orchestrator) {
+                    throw new Error('Orchestrator not initialized');
+                }
+                
+                if (!orchestrator.isReady()) {
+                    throw new Error('Orchestrator not ready');
+                }
+                
+                await orchestrator.startExercise(exerciseType);
+                
+                exerciseStatus.innerHTML = `✅ ${exerciseType} exercise started successfully!`;
+                exerciseStatus.className = 'status success';
+                
+                // Stop the exercise after a short delay for testing
+                setTimeout(async () => {
+                    try {
+                        await orchestrator.stopExercise();
+                        exerciseStatus.innerHTML += `<br>✅ Exercise stopped successfully.`;
+                    } catch (error) {
+                        exerciseStatus.innerHTML += `<br>❌ Error stopping exercise: ${error.message}`;
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                exerciseStatus.innerHTML = `❌ Failed to start ${exerciseType}: ${error.message}`;
+                exerciseStatus.className = 'status error';
+                console.error('Exercise start error:', error);
+            }
+        }
+        
+        function updateManagerStatus() {
+            if (!orchestrator) {
+                managerStatus.innerHTML = 'Orchestrator not initialized';
+                return;
+            }
+            
+            const audioReady = orchestrator.audioManager ? orchestrator.audioManager.isReady() : false;
+            const poseReady = orchestrator.poseValidator ? orchestrator.poseValidator.isReady() : false;
+            const calibrationReady = orchestrator.calibrationManager ? orchestrator.calibrationManager.isReady() : false;
+            const orchestratorReady = orchestrator.isReady();
+            
+            managerStatus.innerHTML = `
+                <strong>Manager Status:</strong><br>
+                AudioManager: ${audioReady ? '✅ Ready' : '❌ Not Ready'}<br>
+                PoseValidator: ${poseReady ? '✅ Ready' : '❌ Not Ready'}<br>
+                CalibrationManager: ${calibrationReady ? '✅ Ready' : '❌ Not Ready'}<br>
+                <strong>Overall Ready: ${orchestratorReady ? '✅ Yes' : '❌ No'}</strong>
+            `;
+            
+            managerStatus.className = orchestratorReady ? 'status success' : 'status error';
+        }
+        
+        // Update status periodically
+        setInterval(() => {
+            if (orchestrator) {
+                updateManagerStatus();
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

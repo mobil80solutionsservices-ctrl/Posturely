@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome Translation API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-left: 3px solid #007bff; }
+    </style>
+</head>
+<body>
+    <h1>Chrome Translation API Direct Test</h1>
+    
+    <div class="test-section">
+        <h2>API Availability Check</h2>
+        <div id="apiStatus" class="status">Checking...</div>
+        <button onclick="checkAPI()">Recheck API</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Direct Translation Tests</h2>
+        <button onclick="testHindi()">Test Hindi Translation</button>
+        <button onclick="testSpanish()">Test Spanish Translation</button>
+        <button onclick="testFrench()">Test French Translation</button>
+        <button onclick="testJapanese()">Test Japanese Translation</button>
+        <div id="translationResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Custom Translation Test</h2>
+        <input type="text" id="customText" placeholder="Enter text to translate" value="Hello, how are you today?" style="width: 300px; padding: 5px;">
+        <select id="targetLanguage">
+            <option value="hi">Hindi</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
+            <option value="zh">Chinese</option>
+            <option value="ar">Arabic</option>
+        </select>
+        <button onclick="testCustom()">Translate</button>
+        <div id="customResult"></div>
+    </div>
+
+    <script>
+        async function checkAPI() {
+            const statusDiv = document.getElementById('apiStatus');
+            
+            try {
+                if (typeof Translator === 'undefined') {
+                    statusDiv.innerHTML = '❌ Chrome Translator API not available. You need Chrome 127+ with AI features enabled.';
+                    statusDiv.className = 'status error';
+                    return false;
+                }
+
+                // Test multiple languages
+                const languages = ['hi', 'es', 'fr', 'ja'];
+                const results = [];
+
+                for (const lang of languages) {
+                    const availability = await Translator.availability({
+                        sourceLanguage: 'en',
+                        targetLanguage: lang
+                    });
+                    results.push(`${lang}: ${availability}`);
+                }
+
+                statusDiv.innerHTML = `✅ Translation API available<br>Language status: ${results.join(', ')}`;
+                statusDiv.className = 'status success';
+                return true;
+
+            } catch (error) {
+                statusDiv.innerHTML = `❌ API check failed: ${error.message}`;
+                statusDiv.className = 'status error';
+                return false;
+            }
+        }
+
+        async function testTranslation(text, targetLang, langName) {
+            const resultsDiv = document.getElementById('translationResults');
+            
+            try {
+                console.log(`Testing ${langName} translation...`);
+                
+                const translator = await Translator.create({
+                    sourceLanguage: 'en',
+                    targetLanguage: targetLang,
+                    monitor(monitor) {
+                        monitor.addEventListener('downloadprogress', (e) => {
+                            console.log(`${langName} model download: ${Math.round(e.loaded * 100)}%`);
+                        });
+                    }
+                });
+
+                const result = await translator.translate({ text });
+                const translatedText = result.output;
+
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result';
+                
+                if (translatedText === text) {
+                    resultDiv.innerHTML = `
+                        <strong>${langName} (${targetLang}):</strong> ⚠️ FAILED<br>
+                        Original: "${text}"<br>
+                        Translated: "${translatedText}" (same as original - translation not working)
+                    `;
+                    resultDiv.style.borderLeftColor = '#ffc107';
+                } else {
+                    resultDiv.innerHTML = `
+                        <strong>${langName} (${targetLang}):</strong> ✅ SUCCESS<br>
+                        Original: "${text}"<br>
+                        Translated: "${translatedText}"
+                    `;
+                    resultDiv.style.borderLeftColor = '#28a745';
+                }
+                
+                resultsDiv.appendChild(resultDiv);
+
+            } catch (error) {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = `
+                    <strong>${langName} (${targetLang}):</strong> ❌ ERROR<br>
+                    Error: ${error.message}
+                `;
+                resultDiv.style.borderLeftColor = '#dc3545';
+                resultsDiv.appendChild(resultDiv);
+            }
+        }
+
+        async function testHindi() {
+            document.getElementById('translationResults').innerHTML = '';
+            await testTranslation('Hello, how are you?', 'hi', 'Hindi');
+            await testTranslation('Start tracking', 'hi', 'Hindi');
+            await testTranslation('Daily Goals', 'hi', 'Hindi');
+        }
+
+        async function testSpanish() {
+            document.getElementById('translationResults').innerHTML = '';
+            await testTranslation('Hello, how are you?', 'es', 'Spanish');
+            await testTranslation('Start tracking', 'es', 'Spanish');
+            await testTranslation('Daily Goals', 'es', 'Spanish');
+        }
+
+        async function testFrench() {
+            document.getElementById('translationResults').innerHTML = '';
+            await testTranslation('Hello, how are you?', 'fr', 'French');
+            await testTranslation('Start tracking', 'fr', 'French');
+            await testTranslation('Daily Goals', 'fr', 'French');
+        }
+
+        async function testJapanese() {
+            document.getElementById('translationResults').innerHTML = '';
+            await testTranslation('Hello, how are you?', 'ja', 'Japanese');
+            await testTranslation('Start tracking', 'ja', 'Japanese');
+            await testTranslation('Daily Goals', 'ja', 'Japanese');
+        }
+
+        async function testCustom() {
+            const text = document.getElementById('customText').value;
+            const targetLang = document.getElementById('targetLanguage').value;
+            const resultDiv = document.getElementById('customResult');
+            
+            resultDiv.innerHTML = 'Translating...';
+            resultDiv.className = 'status warning';
+
+            try {
+                const translator = await Translator.create({
+                    sourceLanguage: 'en',
+                    targetLanguage: targetLang
+                });
+
+                const result = await translator.translate({ text });
+                const translatedText = result.output;
+
+                if (translatedText === text) {
+                    resultDiv.innerHTML = `⚠️ Translation returned same text - API may not be working for ${targetLang}`;
+                    resultDiv.className = 'status warning';
+                } else {
+                    resultDiv.innerHTML = `✅ Success!<br>Original: "${text}"<br>Translated: "${translatedText}"`;
+                    resultDiv.className = 'status success';
+                }
+
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Translation failed: ${error.message}`;
+                resultDiv.className = 'status error';
+            }
+        }
+
+        // Check API on load
+        document.addEventListener('DOMContentLoaded', checkAPI);
+    </script>
+</body>
+</html>

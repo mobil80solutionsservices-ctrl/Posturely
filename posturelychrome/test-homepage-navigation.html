@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage Navigation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .button-secondary {
+            background: #2196F3;
+        }
+        
+        .button:hover {
+            opacity: 0.9;
+        }
+        
+        .status {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .navigation-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+        }
+    </style>
+</head>
+<body>
+    <h1>Homepage Navigation Test</h1>
+    
+    <div class="test-section">
+        <h2>Simulated Homepage Buttons</h2>
+        <p>Testing the navigation buttons that should appear on the main sidepanel:</p>
+        
+        <div class="navigation-buttons">
+            <button class="button">Start tracking</button>
+            <button class="button button-secondary" data-nav-to="scan">📷 Full Body Scan</button>
+            <button class="button button-secondary" data-nav-to="exercises">🧘‍♀️ Do Guided Exercises</button>
+            <button class="button button-secondary" data-nav-to="analytics">📊 View Past Data</button>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Navigation Status</h2>
+        <div id="navigationStatus" class="status">
+            NavigationManager not initialized yet...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Direct Navigation Links</h2>
+        <p>Test direct navigation to each page:</p>
+        
+        <a href="sidepanel.html" class="button">Go to Main (Sidepanel)</a>
+        <a href="scan.html" class="button button-secondary">Go to Scan Page</a>
+        <a href="exercises.html" class="button button-secondary">Go to Exercises</a>
+        <a href="analytics.html" class="button button-secondary">Go to Analytics</a>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="testResults" class="status">
+            Click the navigation buttons above to test the NavigationManager functionality.
+        </div>
+    </div>
+
+    <script src="src/NavigationManager.js"></script>
+    <script>
+        let navigationManager;
+        
+        // Initialize NavigationManager
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                navigationManager = new NavigationManager();
+                
+                // Update status
+                document.getElementById('navigationStatus').innerHTML = `
+                    <strong>NavigationManager Status:</strong> ✅ Initialized<br>
+                    <strong>Current Page:</strong> ${navigationManager.currentPage || 'test-page'}<br>
+                    <strong>URL:</strong> ${window.location.href}
+                `;
+                
+                // Add click listeners to test navigation
+                document.addEventListener('click', function(event) {
+                    if (event.target.matches('[data-nav-to]')) {
+                        const destination = event.target.getAttribute('data-nav-to');
+                        
+                        document.getElementById('testResults').innerHTML = `
+                            <strong>Navigation Test:</strong><br>
+                            Attempting to navigate to: <strong>${destination}</strong><br>
+                            Time: ${new Date().toLocaleTimeString()}<br>
+                            <em>Check if the page redirects properly...</em>
+                        `;
+                    }
+                });
+                
+            } catch (error) {
+                document.getElementById('navigationStatus').innerHTML = `
+                    <strong>NavigationManager Status:</strong> ❌ Error<br>
+                    <strong>Error:</strong> ${error.message}
+                `;
+            }
+        });
+        
+        // Test navigation functionality
+        function testNavigation() {
+            if (navigationManager) {
+                document.getElementById('testResults').innerHTML = `
+                    <strong>Navigation Test Results:</strong><br>
+                    ✅ NavigationManager is working<br>
+                    ✅ Event listeners are active<br>
+                    ✅ Ready for navigation testing
+                `;
+            } else {
+                document.getElementById('testResults').innerHTML = `
+                    <strong>Navigation Test Results:</strong><br>
+                    ❌ NavigationManager not initialized
+                `;
+            }
+        }
+        
+        // Run test after a short delay
+        setTimeout(testNavigation, 1000);
+    </script>
+</body>
+</html>

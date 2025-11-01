@@ -1,0 +1,17 @@
+{
+  "name": "posturely-chrome-extension",
+  "version": "1.0.0",
+  "description": "Posture tracking Chrome extension with AI-powered insights",
+  "scripts": {
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest --coverage --run"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "jsdom": "^23.0.0",
+    "chrome-types": "^0.1.0"
+  },
+  "type": "module"
+}

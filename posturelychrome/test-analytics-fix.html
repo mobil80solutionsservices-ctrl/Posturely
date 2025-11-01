@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Analytics Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .warning { color: orange; font-weight: bold; }
+        .test-button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #f0f0f0;
+        }
+        .test-button:hover {
+            background: #e0e0e0;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Analytics Page Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="testResults">
+            <p>Loading tests...</p>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Analytics Page Preview</h2>
+        <p>The analytics page should load below with working navigation:</p>
+        <iframe src="analytics.html" id="analyticsFrame"></iframe>
+    </div>
+    
+    <div class="test-section">
+        <h2>Manual Test Instructions</h2>
+        <ol>
+            <li>Check if the analytics page loads in the iframe above</li>
+            <li>Try clicking the ◀ and ▶ arrows to change months</li>
+            <li>Try clicking the "Today" button to return to current month</li>
+            <li>Check if the calendar title updates when navigating</li>
+            <li>Look for any console errors in browser dev tools</li>
+        </ol>
+        
+        <h3>Expected Behavior:</h3>
+        <ul>
+            <li>✅ Month arrows should change the calendar month</li>
+            <li>✅ Today button should return to current month and highlight today</li>
+            <li>✅ Calendar title should update to show current month/year</li>
+            <li>✅ No JavaScript errors in console</li>
+        </ul>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `${new Date().toLocaleTimeString()}: ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Test page loaded', 'success');
+            
+            const iframe = document.getElementById('analyticsFrame');
+            
+            iframe.onload = function() {
+                log('Analytics iframe loaded successfully', 'success');
+                
+                setTimeout(() => {
+                    try {
+                        // Try to access iframe content (may fail due to CORS)
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        
+                        if (iframeDoc) {
+                            const prevBtn = iframeDoc.getElementById('prevMonth');
+                            const nextBtn = iframeDoc.getElementById('nextMonth');
+                            const todayBtn = iframeDoc.getElementById('todayBtn');
+                            const calendarTitle = iframeDoc.getElementById('calendarTitle');
+                            const statsGrid = iframeDoc.getElementById('statsGrid');
+                            
+                            log(`prevMonth button: ${prevBtn ? 'Found' : 'Missing'}`, prevBtn ? 'success' : 'error');
+                            log(`nextMonth button: ${nextBtn ? 'Found' : 'Missing'}`, nextBtn ? 'success' : 'error');
+                            log(`todayBtn button: ${todayBtn ? 'Found' : 'Missing'}`, todayBtn ? 'success' : 'error');
+                            log(`calendarTitle: ${calendarTitle ? 'Found' : 'Missing'}`, calendarTitle ? 'success' : 'error');
+                            log(`statsGrid: ${statsGrid ? 'Found' : 'Missing'}`, statsGrid ? 'success' : 'error');
+                            
+                            if (calendarTitle) {
+                                log(`Calendar title text: "${calendarTitle.textContent}"`, 'success');
+                            }
+                            
+                            // Test if buttons are clickable
+                            if (prevBtn && nextBtn && todayBtn) {
+                                log('All navigation buttons found - manual testing required', 'success');
+                            } else {
+                                log('Some navigation buttons missing - check HTML structure', 'error');
+                            }
+                            
+                        } else {
+                            log('Cannot access iframe content (CORS restriction)', 'warning');
+                            log('Manual testing required - check the iframe above', 'warning');
+                        }
+                        
+                    } catch (error) {
+                        log('Error accessing iframe: ' + error.message, 'warning');
+                        log('This is normal due to CORS - manual testing required', 'warning');
+                    }
+                }, 1000);
+            };
+            
+            iframe.onerror = function() {
+                log('Error loading analytics iframe', 'error');
+            };
+        });
+    </script>
+</body>
+</html>

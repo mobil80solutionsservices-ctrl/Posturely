@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioSequenceManager Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+        .log {
+            background: #f1f1f1;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>AudioSequenceManager Test</h1>
+    
+    <div class="test-section">
+        <h3>Initialization</h3>
+        <button id="initBtn">Initialize Audio Manager</button>
+        <div id="initStatus" class="status">Not initialized</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Basic Audio Playback</h3>
+        <button id="playCountdownBtn" disabled>Play Countdown</button>
+        <button id="playSitTallBtn" disabled>Play Sit Tall</button>
+        <button id="playWellDoneBtn" disabled>Play Well Done</button>
+        <button id="stopBtn" disabled>Stop Audio</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Nature Sounds</h3>
+        <button id="startNatureBtn" disabled>Start Nature Sounds</button>
+        <button id="stopNatureBtn" disabled>Stop Nature Sounds</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Audio Sequence</h3>
+        <button id="playSequenceBtn" disabled>Play Exercise Sequence</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Correction Handler</h3>
+        <button id="startCorrectionBtn" disabled>Start Correction</button>
+        <button id="endCorrectionBtn" disabled>End Correction</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>System Status</h3>
+        <div id="statusDisplay" class="status">
+            <div>Audio Context State: <span id="contextState">Unknown</span></div>
+            <div>Audio Manager Ready: <span id="managerReady">Unknown</span></div>
+            <div>Loaded Audio Files: <span id="loadedFiles">Unknown</span></div>
+        </div>
+        <button id="refreshStatusBtn">Refresh Status</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Console Log</h3>
+        <div id="consoleLog" class="log"></div>
+        <button id="clearLogBtn">Clear Log</button>
+    </div>
+
+    <script type="module">
+        import { AudioSequenceManager } from './src/AudioSequenceManager.js';
+        
+        let audioManager = null;
+        let correctionHandler = null;
+        
+        // Console log capture
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const logElement = document.getElementById('consoleLog');
+        
+        function addToLog(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.style.color = type === 'error' ? 'red' : type === 'warn' ? 'orange' : 'black';
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logElement.appendChild(logEntry);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        console.log = (...args) => {
+            originalLog(...args);
+            addToLog(args.join(' '), 'log');
+        };
+        
+        console.error = (...args) => {
+            originalError(...args);
+            addToLog(args.join(' '), 'error');
+        };
+        
+        console.warn = (...args) => {
+            originalWarn(...args);
+            addToLog(args.join(' '), 'warn');
+        };
+        
+        // Initialize audio manager
+        document.getElementById('initBtn').addEventListener('click', async () => {
+            try {
+                document.getElementById('initBtn').disabled = true;
+                document.getElementById('initStatus').textContent = 'Initializing...';
+                
+                audioManager = new AudioSequenceManager();
+                await audioManager.initialize();
+                
+                // Enable other buttons
+                const buttons = ['playCountdownBtn', 'playSitTallBtn', 'playWellDoneBtn', 
+                               'stopBtn', 'startNatureBtn', 'stopNatureBtn', 'playSequenceBtn',
+                               'startCorrectionBtn', 'endCorrectionBtn'];
+                buttons.forEach(id => {
+                    document.getElementById(id).disabled = false;
+                });
+                
+                document.getElementById('initStatus').textContent = 'Initialized successfully!';
+                updateStatus();
+                
+            } catch (error) {
+                document.getElementById('initStatus').textContent = `Failed: ${error.message}`;
+                console.error('Initialization failed:', error);
+            }
+        });
+        
+        // Basic audio playback
+        document.getElementById('playCountdownBtn').addEventListener('click', async () => {
+            if (audioManager) {
+                await audioManager.playAudio('countdown.mp3');
+            }
+        });
+        
+        document.getElementById('playSitTallBtn').addEventListener('click', async () => {
+            if (audioManager) {
+                await audioManager.playAudio('sittall.mp3');
+            }
+        });
+        
+        document.getElementById('playWellDoneBtn').addEventListener('click', async () => {
+            if (audioManager) {
+                await audioManager.playAudio('welldone.mp3');
+            }
+        });
+        
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            if (audioManager) {
+                audioManager.stopAll();
+            }
+        });
+        
+        // Nature sounds
+        document.getElementById('startNatureBtn').addEventListener('click', () => {
+            if (audioManager) {
+                audioManager.startNatureSoundsLoop();
+            }
+        });
+        
+        document.getElementById('stopNatureBtn').addEventListener('click', () => {
+            if (audioManager) {
+                audioManager.stopNatureSounds();
+            }
+        });
+        
+        // Audio sequence
+        document.getElementById('playSequenceBtn').addEventListener('click', async () => {
+            if (audioManager) {
+                const sequence = [
+                    { filename: 'sittall.mp3', delay: 0 },
+                    { filename: 'countdown.mp3', delay: 1000 },
+                    { filename: 'meditationstarted.mp3', delay: 500 }
+                ];
+                await audioManager.playSequence(sequence);
+            }
+        });
+        
+        // Correction handler
+        document.getElementById('startCorrectionBtn').addEventListener('click', async () => {
+            if (audioManager) {
+                correctionHandler = audioManager.createCorrectionHandler();
+                await correctionHandler.startCorrection();
+            }
+        });
+        
+        document.getElementById('endCorrectionBtn').addEventListener('click', async () => {
+            if (correctionHandler) {
+                await correctionHandler.endCorrection();
+            }
+        });
+        
+        // Status update
+        function updateStatus() {
+            if (audioManager) {
+                document.getElementById('contextState').textContent = audioManager.getAudioContextState();
+                document.getElementById('managerReady').textContent = audioManager.isReady() ? 'Yes' : 'No';
+                
+                // Count loaded files
+                const loadedCount = audioManager.audioBuffers ? audioManager.audioBuffers.size : 0;
+                document.getElementById('loadedFiles').textContent = loadedCount;
+            }
+        }
+        
+        document.getElementById('refreshStatusBtn').addEventListener('click', updateStatus);
+        
+        // Clear log
+        document.getElementById('clearLogBtn').addEventListener('click', () => {
+            logElement.innerHTML = '';
+        });
+        
+        // Initial status
+        updateStatus();
+        
+        console.log('AudioSequenceManager test page loaded');
+    </script>
+</body>
+</html>

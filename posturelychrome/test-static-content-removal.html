@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Static Content Removal</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: #2B1E0F;
+            margin: 18px 0 8px 0;
+        }
+        .section-text {
+            font-size: 18px;
+            line-height: 1.5;
+            color: #2B1E0F;
+        }
+        .motivation-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .motivation-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1px solid rgba(122, 75, 0, 0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2B1E0F;
+            font-size: 16px;
+        }
+        .test-result {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        button {
+            background: #FFD045;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Static Content Removal Test</h1>
+        
+        <button onclick="checkStaticContent()">Check for Static Content</button>
+        <button onclick="loadSidepanel()">Load Sidepanel Content</button>
+        
+        <div id="testResults"></div>
+        
+        <!-- Test blocks that mimic sidepanel structure -->
+        <div id="summaryBlock" class="hidden">
+            <div class="section-title">Summary</div>
+            <div class="section-text">Generating AI summary...</div>
+        </div>
+
+        <div id="motivationBlock" class="hidden">
+            <div class="section-title">Motivation</div>
+            <div class="motivation-row">
+                <div class="motivation-icon">💡</div>
+                <div class="section-text">Generating AI motivation...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check for static content that should be removed
+        window.checkStaticContent = function() {
+            const results = document.getElementById('testResults');
+            let html = '<h3>Static Content Check Results:</h3>';
+            
+            const staticPhrases = [
+                'Great job! Over the last 3 hours your sitting posture has shown improvement.',
+                'Keep it up! You\'re building a fantastic streak of good posture.',
+                'Great job maintaining awareness',
+                'building fantastic posture habits'
+            ];
+            
+            let foundStatic = false;
+            
+            staticPhrases.forEach(phrase => {
+                const found = document.body.textContent.includes(phrase);
+                if (found) {
+                    foundStatic = true;
+                    html += `<div class="test-result fail">❌ Found static content: "${phrase}"</div>`;
+                } else {
+                    html += `<div class="test-result pass">✅ Static content removed: "${phrase.substring(0, 30)}..."</div>`;
+                }
+            });
+            
+            if (!foundStatic) {
+                html += '<div class="test-result pass">🎉 All static content successfully removed!</div>';
+            }
+            
+            results.innerHTML = html;
+        };
+        
+        // Load and check sidepanel content
+        window.loadSidepanel = async function() {
+            try {
+                const response = await fetch('./sidepanel.html');
+                const html = await response.text();
+                
+                const results = document.getElementById('testResults');
+                let resultHtml = '<h3>Sidepanel Content Check:</h3>';
+                
+                const staticPhrases = [
+                    'Great job! Over the last 3 hours your sitting posture has shown improvement.',
+                    'Keep it up! You\'re building a fantastic streak of good posture.'
+                ];
+                
+                let foundStatic = false;
+                
+                staticPhrases.forEach(phrase => {
+                    const found = html.includes(phrase);
+                    if (found) {
+                        foundStatic = true;
+                        resultHtml += `<div class="test-result fail">❌ Found in sidepanel.html: "${phrase}"</div>`;
+                    } else {
+                        resultHtml += `<div class="test-result pass">✅ Not found in sidepanel.html: "${phrase.substring(0, 30)}..."</div>`;
+                    }
+                });
+                
+                // Check for placeholder content
+                if (html.includes('Generating AI summary...')) {
+                    resultHtml += '<div class="test-result pass">✅ Found placeholder: "Generating AI summary..."</div>';
+                }
+                
+                if (html.includes('Generating AI motivation...')) {
+                    resultHtml += '<div class="test-result pass">✅ Found placeholder: "Generating AI motivation..."</div>';
+                }
+                
+                if (!foundStatic) {
+                    resultHtml += '<div class="test-result pass">🎉 Sidepanel.html is clean of static content!</div>';
+                }
+                
+                results.innerHTML = resultHtml;
+                
+            } catch (error) {
+                document.getElementById('testResults').innerHTML = `<div class="test-result fail">❌ Error loading sidepanel.html: ${error.message}</div>`;
+            }
+        };
+        
+        // Auto-run check on load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkStaticContent();
+        });
+    </script>
+</body>
+</html>

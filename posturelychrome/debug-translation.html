@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; font-family: monospace; white-space: pre-wrap; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>Translation System Debug</h1>
+    
+    <div class="debug-section">
+        <h2>API Status</h2>
+        <button onclick="checkAPI()">Check Translation API</button>
+        <div id="apiStatus" class="status">Click to check</div>
+    </div>
+
+    <div class="debug-section">
+        <h2>Test Translation</h2>
+        <button onclick="testHindiTranslation()">Test Hindi Translation</button>
+        <button onclick="testSpanishTranslation()">Test Spanish Translation</button>
+        <button onclick="restoreEnglish()">Restore English</button>
+        <div id="translationStatus" class="status">Ready</div>
+    </div>
+
+    <div class="debug-section">
+        <h2>Sample Interface Elements</h2>
+        <div class="title">Posturely</div>
+        <div id="status" class="status">No active tracking</div>
+        <div class="subtext">Start a session to monitor your posture.</div>
+        <button id="startTracking" class="button">Start tracking</button>
+        <button id="startScan" class="button">📷 Full Body Scan</button>
+        <div class="score-label">Current Posture Score</div>
+        <div class="mood-title">How are you feeling?</div>
+        <div class="goals-title">Daily Goals</div>
+        <div class="badges-title">Achievements</div>
+    </div>
+
+    <div class="debug-section">
+        <h2>Debug Log</h2>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="debugLog" class="log">Debug information will appear here...</div>
+    </div>
+
+    <script type="module">
+        import { LocalizationService } from './src/LocalizationService.js';
+        import { EnhancedLanguageManager } from './src/EnhancedLanguageManager.js';
+
+        let localizationService;
+        let languageManager;
+        let debugLog = [];
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            debugLog.push(logMessage);
+            document.getElementById('debugLog').textContent = debugLog.join('\n');
+            console.log(logMessage);
+        }
+
+        window.clearLog = function() {
+            debugLog = [];
+            document.getElementById('debugLog').textContent = 'Debug log cleared...';
+        };
+
+        async function initServices() {
+            try {
+                log('Initializing services...');
+                localizationService = new LocalizationService();
+                languageManager = new EnhancedLanguageManager();
+                
+                await localizationService.initialize();
+                await languageManager.initialize();
+                
+                log('Services initialized successfully');
+                
+                // Make services globally available
+                window.localizationService = localizationService;
+                window.languageManager = languageManager;
+                
+            } catch (error) {
+                log(`Service initialization failed: ${error.message}`);
+            }
+        }
+
+        window.checkAPI = async function() {
+            const statusDiv = document.getElementById('apiStatus');
+            
+            try {
+                log('Checking Translation API availability...');
+                
+                if (typeof Translator === 'undefined') {
+                    const message = 'Chrome Translator API not available';
+                    log(message);
+                    statusDiv.innerHTML = message;
+                    statusDiv.className = 'status error';
+                    return;
+                }
+
+                const availability = await Translator.availability({
+                    sourceLanguage: 'en',
+                    targetLanguage: 'hi'
+                });
+
+                log(`Translation availability: ${availability}`);
+
+                if (availability === 'available') {
+                    statusDiv.innerHTML = '✅ Translation API is available!';
+                    statusDiv.className = 'status success';
+                } else if (availability === 'after-download') {
+                    statusDiv.innerHTML = '⚠️ Translation available after model download';
+                    statusDiv.className = 'status warning';
+                } else {
+                    statusDiv.innerHTML = `⚠️ Translation status: ${availability}`;
+                    statusDiv.className = 'status warning';
+                }
+
+            } catch (error) {
+                log(`API check failed: ${error.message}`);
+                statusDiv.innerHTML = `❌ API check failed: ${error.message}`;
+                statusDiv.className = 'status error';
+            }
+        };
+
+        window.testHindiTranslation = async function() {
+            const statusDiv = document.getElementById('translationStatus');
+            
+            try {
+                log('Starting Hindi translation test...');
+                statusDiv.innerHTML = 'Translating to Hindi...';
+                statusDiv.className = 'status warning';
+                
+                if (!localizationService) {
+                    throw new Error('LocalizationService not initialized');
+                }
+
+                // Force translate to Hindi
+                await localizationService.forceTranslateInterface('hi');
+                
+                log('Hindi translation completed');
+                statusDiv.innerHTML = '✅ Translated to Hindi';
+                statusDiv.className = 'status success';
+                
+            } catch (error) {
+                log(`Hindi translation failed: ${error.message}`);
+                statusDiv.innerHTML = `❌ Translation failed: ${error.message}`;
+                statusDiv.className = 'status error';
+            }
+        };
+
+        window.testSpanishTranslation = async function() {
+            const statusDiv = document.getElementById('translationStatus');
+            
+            try {
+                log('Starting Spanish translation test...');
+                statusDiv.innerHTML = 'Translating to Spanish...';
+                statusDiv.className = 'status warning';
+                
+                if (!localizationService) {
+                    throw new Error('LocalizationService not initialized');
+                }
+
+                // Force translate to Spanish
+                await localizationService.forceTranslateInterface('es');
+                
+                log('Spanish translation completed');
+                statusDiv.innerHTML = '✅ Translated to Spanish';
+                statusDiv.className = 'status success';
+                
+            } catch (error) {
+                log(`Spanish translation failed: ${error.message}`);
+                statusDiv.innerHTML = `❌ Translation failed: ${error.message}`;
+                statusDiv.className = 'status error';
+            }
+        };
+
+        window.restoreEnglish = async function() {
+            const statusDiv = document.getElementById('translationStatus');
+            
+            try {
+                log('Restoring English...');
+                statusDiv.innerHTML = 'Restoring English...';
+                statusDiv.className = 'status warning';
+                
+                if (!localizationService) {
+                    throw new Error('LocalizationService not initialized');
+                }
+
+                // Force translate to English (restore)
+                await localizationService.forceTranslateInterface('en');
+                
+                log('English restoration completed');
+                statusDiv.innerHTML = '✅ Restored to English';
+                statusDiv.className = 'status success';
+                
+            } catch (error) {
+                log(`English restoration failed: ${error.message}`);
+                statusDiv.innerHTML = `❌ Restoration failed: ${error.message}`;
+                statusDiv.className = 'status error';
+            }
+        };
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            log('Page loaded, initializing...');
+            await initServices();
+            await checkAPI();
+        });
+    </script>
+</body>
+</html>

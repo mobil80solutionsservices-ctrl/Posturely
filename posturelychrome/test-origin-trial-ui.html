@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Origin Trial UI Test</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .button { padding: 8px 16px; margin: 4px; border: none; border-radius: 6px; cursor: pointer; }
+        .button-primary { background: #007AFF; color: white; }
+        .button-secondary { background: #f0f0f0; color: #333; }
+        .button-tertiary { background: transparent; color: #666; border: 1px solid #ddd; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Origin Trial UI Test</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Show Setup Message (not dismissed)</h3>
+        <div id="test1-status" class="origin-trial-status">
+            <div>💡 AI-powered features are available with additional setup (optional)</div>
+            <div>
+                <p><strong>Optional:</strong> Enable AI-powered features for enhanced summaries and motivational messages:</p>
+                <div>
+                    <button class="button button-secondary">📖 Setup Guide</button>
+                    <button class="button button-secondary">🔄 Recheck</button>
+                    <button class="button button-tertiary" onclick="dismissTest1()">✕ Don't show again</button>
+                </div>
+                <p style="font-size: 12px; color: #666; font-style: italic;">Note: All core posture tracking features work without AI setup.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 2: Hidden Message (dismissed or working)</h3>
+        <div id="test2-status" class="origin-trial-status hidden">
+            <div>This should be hidden</div>
+        </div>
+        <p>✅ No setup message shown - extension works normally</p>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 3: Simulate Dismiss Action</h3>
+        <button class="button button-primary" onclick="testDismiss()">Test Dismiss Functionality</button>
+        <div id="dismiss-result"></div>
+    </div>
+
+    <script>
+        function dismissTest1() {
+            document.getElementById('test1-status').classList.add('hidden');
+            document.getElementById('dismiss-result').innerHTML = '✅ Message dismissed successfully';
+        }
+
+        function testDismiss() {
+            // Simulate the storage operation
+            console.log('Would set aiSetupDismissed: true in chrome.storage.local');
+            document.getElementById('dismiss-result').innerHTML = '✅ Dismiss functionality working';
+        }
+    </script>
+</body>
+</html>

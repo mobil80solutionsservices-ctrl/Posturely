@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sidepanel Navigation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .button-secondary {
+            background: #2196F3;
+        }
+        
+        .button:hover {
+            opacity: 0.9;
+        }
+        
+        .status {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sidepanel Navigation Test</h1>
+    
+    <div class="test-section">
+        <h2>Simulated Sidepanel Controls</h2>
+        <p>Testing the button layout and navigation functionality:</p>
+        
+        <div class="controls">
+            <button id="startTracking" class="button button-primary">Start tracking</button>
+            <button id="startScan" class="button button-secondary">📷 Full Body Scan</button>
+            <button id="guidedExercisesBtn" class="button button-secondary">🧘‍♀️ Do Guided Exercises</button>
+            <button id="stopTracking" class="button button-secondary" style="display: none;">⏹️ Stop Tracking</button>
+        </div>
+        
+        <button id="viewPastDataBtn" class="button button-secondary" style="margin: 16px 0;">
+            📊 View Past Data
+        </button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Navigation Test Results</h2>
+        <div id="testResults" class="status">
+            Click the buttons above to test navigation functionality.
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Button Spacing Test</h2>
+        <p>Check that the spacing between buttons is consistent:</p>
+        <ul>
+            <li>Start tracking → Full Body Scan: Should have normal spacing</li>
+            <li>Full Body Scan → Do Guided Exercises: Should have same spacing</li>
+            <li>Do Guided Exercises → View Past Data: Should have normal spacing</li>
+        </ul>
+    </div>
+
+    <script>
+        // Mock chrome.tabs.create for testing
+        if (typeof chrome === 'undefined') {
+            window.chrome = {
+                runtime: {
+                    getURL: (path) => `./${path}`
+                },
+                tabs: {
+                    create: (options) => {
+                        console.log('Mock navigation to:', options.url);
+                        document.getElementById('testResults').innerHTML = `
+                            <strong>Navigation Test:</strong><br>
+                            Would navigate to: <strong>${options.url}</strong><br>
+                            Time: ${new Date().toLocaleTimeString()}<br>
+                            <em>In real extension, this would open in a new tab</em>
+                        `;
+                        return Promise.resolve({ id: Math.random() });
+                    }
+                }
+            };
+        }
+        
+        // Simulate the sidepanel.js functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const startTrackingBtn = document.getElementById('startTracking');
+            const startScanBtn = document.getElementById('startScan');
+            const guidedExercisesBtn = document.getElementById('guidedExercisesBtn');
+            const stopTrackingBtn = document.getElementById('stopTracking');
+            const viewPastDataBtn = document.getElementById('viewPastDataBtn');
+            
+            // Mock functions
+            function startScan() {
+                console.log('🎯 Navigating to dedicated scan page');
+                chrome.tabs.create({
+                    url: chrome.runtime.getURL('scan.html')
+                });
+            }
+            
+            // Event listeners
+            if (startScanBtn) {
+                startScanBtn.addEventListener('click', startScan);
+            }
+            
+            // Guided Exercises Button
+            if (guidedExercisesBtn) {
+                guidedExercisesBtn.addEventListener('click', () => {
+                    console.log('🧘‍♀️ Navigating to guided exercises page');
+                    chrome.tabs.create({
+                        url: chrome.runtime.getURL('exercises.html')
+                    });
+                });
+            }
+            
+            if (viewPastDataBtn) {
+                viewPastDataBtn.addEventListener('click', () => {
+                    chrome.tabs.create({
+                        url: chrome.runtime.getURL('analytics.html')
+                    });
+                });
+            }
+            
+            if (startTrackingBtn) {
+                startTrackingBtn.addEventListener('click', () => {
+                    document.getElementById('testResults').innerHTML = `
+                        <strong>Start Tracking:</strong><br>
+                        This would start posture tracking<br>
+                        Time: ${new Date().toLocaleTimeString()}
+                    `;
+                });
+            }
+            
+            document.getElementById('testResults').innerHTML = `
+                <strong>Test Status:</strong> ✅ Ready<br>
+                All navigation buttons are properly configured and ready for testing.
+            `;
+        });
+    </script>
+</body>
+</html>

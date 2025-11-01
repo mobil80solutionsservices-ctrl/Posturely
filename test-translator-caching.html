@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translator Caching Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+        pre {
+            background: #f7f7f7;
+            padding: 0.5rem;
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Translator Caching Test</h1>
+    <p>This tests that translator instances are cached to prevent repeated downloads.</p>
+
+    <div id="status" class="status info">Ready to test...</div>
+    <button onclick="testTranslatorCaching()">Test Translator Caching</button>
+    <button onclick="clearCache()">Clear Cache</button>
+
+    <pre id="output" style="display: none;"></pre>
+
+    <script type="module">
+        import { LocalizationService } from './posturelychrome/src/LocalizationService.js';
+
+        window.localizationService = new LocalizationService();
+        
+        window.testTranslatorCaching = async function() {
+            const statusDiv = document.getElementById('status');
+            const outputDiv = document.getElementById('output');
+            
+            statusDiv.innerHTML = '<div class="info">Testing translator caching...</div>';
+            outputDiv.style.display = 'none';
+            
+            try {
+                let output = 'Translator Caching Test Results:\n\n';
+                
+                // Check initial cache status
+                let cacheStatus = window.localizationService.getTranslatorCacheStatus();
+                output += `Initial cache: ${JSON.stringify(cacheStatus)}\n\n`;
+                
+                // First translation (should create and cache translator)
+                output += '1. First Hindi translation (should create translator):\n';
+                const result1 = await window.localizationService.translateText('Hello', 'hi');
+                output += `   Result: "${result1}"\n`;
+                
+                cacheStatus = window.localizationService.getTranslatorCacheStatus();
+                output += `   Cache after: ${JSON.stringify(cacheStatus)}\n\n`;
+                
+                // Second translation (should use cached translator)
+                output += '2. Second Hindi translation (should use cache):\n';
+                const result2 = await window.localizationService.translateText('Goodbye', 'hi');
+                output += `   Result: "${result2}"\n`;
+                
+                cacheStatus = window.localizationService.getTranslatorCacheStatus();
+                output += `   Cache after: ${JSON.stringify(cacheStatus)}\n\n`;
+                
+                // Third translation (should still use cached translator)
+                output += '3. Third Hindi translation (should use cache):\n';
+                const result3 = await window.localizationService.translateText('Thank you', 'hi');
+                output += `   Result: "${result3}"\n`;
+                
+                cacheStatus = window.localizationService.getTranslatorCacheStatus();
+                output += `   Final cache: ${JSON.stringify(cacheStatus)}\n\n`;
+                
+                output += '✅ Test completed! Check console for download messages.\n';
+                output += 'You should only see "Creating new translator" once for Hindi.';
+                
+                statusDiv.innerHTML = '<div class="success">✅ Caching test completed!</div>';
+                outputDiv.innerHTML = output;
+                outputDiv.style.display = 'block';
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">Test failed: ${error.message}</div>`;
+                outputDiv.innerHTML = `Error: ${error.message}\n${error.stack}`;
+                outputDiv.style.display = 'block';
+            }
+        };
+
+        window.clearCache = function() {
+            window.localizationService.clearTranslatorCache();
+            document.getElementById('status').innerHTML = '<div class="info">Cache cleared!</div>';
+        };
+    </script>
+</body>
+</html>

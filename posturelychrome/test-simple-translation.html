@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Translation Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+        .test-box { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 3px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .translatable { margin: 10px 0; padding: 10px; background: #f8f9fa; border-left: 3px solid #007bff; }
+    </style>
+</head>
+<body>
+    <h1>Simple Translation Test</h1>
+    
+    <div class="test-box">
+        <h2>API Status</h2>
+        <div id="apiStatus" class="status">Checking...</div>
+        <button onclick="checkAPI()">Check API</button>
+    </div>
+
+    <div class="test-box">
+        <h2>Direct Translation Test</h2>
+        <input type="text" id="testInput" value="Hello, how are you today?" style="width: 300px; padding: 5px;">
+        <select id="targetLang">
+            <option value="hi">Hindi</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="ja">Japanese</option>
+        </select>
+        <button onclick="translateText()">Translate</button>
+        <div id="translationResult" class="status" style="display: none;"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Interface Elements</h2>
+        <button onclick="translateInterface()">Translate to Hindi</button>
+        <button onclick="restoreEnglish()">Restore English</button>
+        
+        <div class="translatable" data-original="Posturely">Posturely</div>
+        <div class="translatable" data-original="Start tracking">Start tracking</div>
+        <div class="translatable" data-original="Full Body Scan">📷 Full Body Scan</div>
+        <div class="translatable" data-original="View Past Data">📊 View Past Data</div>
+        <div class="translatable" data-original="Current Posture Score">Current Posture Score</div>
+        <div class="translatable" data-original="How are you feeling?">How are you feeling?</div>
+        <div class="translatable" data-original="Daily Goals">Daily Goals</div>
+        <div class="translatable" data-original="Achievements">Achievements</div>
+    </div>
+
+    <script>
+        let translator = null;
+
+        async function checkAPI() {
+            const statusDiv = document.getElementById('apiStatus');
+            
+            try {
+                if (typeof Translator === 'undefined') {
+                    statusDiv.innerHTML = 'Chrome Translator API not available. Need Chrome 127+ with AI features enabled.';
+                    statusDiv.className = 'status error';
+                    return;
+                }
+
+                const availability = await Translator.availability({
+                    sourceLanguage: 'en',
+                    targetLanguage: 'hi'
+                });
+
+                console.log('Translation availability:', availability);
+
+                if (availability === 'available') {
+                    statusDiv.innerHTML = '✅ Translation API is available!';
+                    statusDiv.className = 'status success';
+                } else if (availability === 'after-download') {
+                    statusDiv.innerHTML = '⚠️ Translation available after model download';
+                    statusDiv.className = 'status warning';
+                } else {
+                    statusDiv.innerHTML = `⚠️ Translation status: ${availability}`;
+                    statusDiv.className = 'status warning';
+                }
+
+            } catch (error) {
+                console.error('API check failed:', error);
+                statusDiv.innerHTML = `❌ API check failed: ${error.message}`;
+                statusDiv.className = 'status error';
+            }
+        }
+
+        async function translateText() {
+            const input = document.getElementById('testInput').value;
+            const targetLang = document.getElementById('targetLang').value;
+            const resultDiv = document.getElementById('translationResult');
+            
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Translating...';
+            resultDiv.className = 'status warning';
+
+            try {
+                if (!translator) {
+                    console.log('Creating translator...');
+                    translator = await Translator.create({
+                        sourceLanguage: 'en',
+                        targetLanguage: targetLang,
+                        monitor(monitor) {
+                            monitor.addEventListener('downloadprogress', (e) => {
+                                const progress = Math.round(e.loaded * 100);
+                                resultDiv.innerHTML = `Downloading model: ${progress}%`;
+                            });
+                        }
+                    });
+                }
+
+                const result = await translator.translate({ text: input });
+                
+                resultDiv.innerHTML = `
+                    <strong>Original:</strong> ${input}<br>
+                    <strong>Translated:</strong> ${result.output}
+                `;
+                resultDiv.className = 'status success';
+
+            } catch (error) {
+                console.error('Translation failed:', error);
+                resultDiv.innerHTML = `Translation failed: ${error.message}`;
+                resultDiv.className = 'status error';
+            }
+        }
+
+        async function translateInterface() {
+            const elements = document.querySelectorAll('.translatable');
+            
+            try {
+                if (!translator) {
+                    translator = await Translator.create({
+                        sourceLanguage: 'en',
+                        targetLanguage: 'hi'
+                    });
+                }
+
+                for (const element of elements) {
+                    const originalText = element.dataset.original;
+                    const result = await translator.translate({ text: originalText });
+                    element.textContent = result.output;
+                }
+
+            } catch (error) {
+                console.error('Interface translation failed:', error);
+                alert(`Translation failed: ${error.message}`);
+            }
+        }
+
+        function restoreEnglish() {
+            const elements = document.querySelectorAll('.translatable');
+            elements.forEach(element => {
+                element.textContent = element.dataset.original;
+            });
+        }
+
+        // Check API on load
+        document.addEventListener('DOMContentLoaded', checkAPI);
+    </script>
+</body>
+</html>

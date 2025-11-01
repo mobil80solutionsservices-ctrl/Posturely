@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Posturely Analytics</title>
+    <style>
+        :root {
+            --bg: #FFFFFF;
+            --text: #2B1E0F;
+            --subtext: #5B4A37;
+            --accent: #FED867;
+            --border: rgba(122, 75, 0, 0.18);
+            --score-surface: rgba(0,0,0,0.04);
+            --buttonPrimaryBG1: #FFD045;
+            --buttonPrimaryBG2: #F9B52D;
+            --buttonPrimaryText: #2B1E0F;
+            --secondaryBG: #FFF3C9;
+            --success: #34C759;
+            --warning: #FFA000;
+            --danger: #EF4444;
+        }
+
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .analytics-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .analytics-header {
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .analytics-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+
+
+
+
+        /* Main Content */
+        .analytics-content {
+            flex: 1;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 24px;
+        }
+
+        .main-section {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .sidebar-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Cards */
+        .analytics-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0 0 16px 0;
+        }
+
+        /* Calendar Section */
+        .calendar-section {
+            min-height: 200px;
+        }
+
+        .calendar-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-button {
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-button:hover {
+            background: var(--accent);
+        }
+
+        .calendar-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .calendar-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-top: 12px;
+        }
+
+        .calendar-week-labels {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .week-label {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--subtext);
+            text-transform: uppercase;
+            padding: 4px 2px;
+        }
+
+        .cal-day {
+            height: 32px;
+            min-height: 32px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 4px 6px;
+            text-align: center;
+            cursor: pointer;
+            background: var(--bg);
+            color: var(--text);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            position: relative;
+            font-size: 13px;
+        }
+
+        .cal-day:hover {
+            background: var(--score-surface);
+            transform: translateY(-1px);
+        }
+
+        .cal-day.selected {
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
+            background: rgba(254, 216, 103, 0.1);
+        }
+
+        .cal-day.today {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+            font-weight: 800;
+        }
+
+        .cal-day.has-data {
+            background: rgba(52, 199, 89, 0.1);
+            border-color: var(--success);
+        }
+
+        .cal-day.high-activity {
+            background: var(--success);
+            color: white;
+            font-weight: 700;
+        }
+
+        .cal-day.other-month {
+            opacity: 0.4;
+            color: var(--subtext);
+        }
+
+        .activity-indicator {
+            position: absolute;
+            bottom: 1px;
+            right: 1px;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        /* Statistics Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        /* Scan History Grid */
+        .scan-history-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .scan-history-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .scan-history-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .scan-thumbnail {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            background: var(--score-surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .scan-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .scan-date {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .scan-details {
+            font-size: 12px;
+            color: var(--subtext);
+            line-height: 1.4;
+        }
+
+        .scan-score {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .scan-score-value {
+            font-size: 18px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .scan-score-value.score-good {
+            background: var(--success);
+            color: white;
+        }
+
+        .scan-score-value.score-fair {
+            background: var(--warning);
+            color: white;
+        }
+
+        .scan-score-value.score-poor {
+            background: var(--danger);
+            color: white;
+        }
+
+        .stat-card {
+            background: var(--score-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-card.avg-score-card {
+            background: transparent;
+            border: none;
+        }
+
+        .stat-card.avg-score-card .stat-value.score-good {
+            background: none;
+            color: var(--success);
+            padding: 0;
+            border-radius: 0;
+        }
+
+        .stat-card.avg-score-card .stat-value.score-fair {
+            background: none;
+            color: var(--warning);
+            padding: 0;
+            border-radius: 0;
+        }
+
+        .stat-card.avg-score-card .stat-value.score-poor {
+            background: none;
+            color: var(--danger);
+            padding: 0;
+            border-radius: 0;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0 0 4px 0;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--subtext);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .stat-trend {
+            font-size: 11px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        .trend-up { color: var(--success); }
+        .trend-down { color: var(--danger); }
+        .trend-neutral { color: var(--subtext); }
+
+        /* Day Details */
+        .day-details {
+            background: var(--score-surface);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .detail-value {
+            color: var(--subtext);
+        }
+
+        /* Session List */
+        .session-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .session-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .session-time {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .session-duration {
+            font-size: 14px;
+            color: var(--subtext);
+        }
+
+        .session-mood {
+            font-size: 14px;
+            color: var(--text);
+            font-style: italic;
+            margin-top: 4px;
+            padding: 4px 8px;
+            background: var(--secondaryBG);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .session-info {
+            flex: 1;
+        }
+
+        .session-score {
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .score-good {
+            background: var(--success);
+            color: white;
+        }
+
+        .score-fair {
+            background: var(--warning);
+            color: white;
+        }
+
+        .score-poor {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Notes Section */
+        .notes-section {
+            margin-top: 16px;
+        }
+
+        .notes-input {
+            width: 100%;
+            min-height: 80px;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        .notes-input:focus {
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
+        }
+
+        .save-notes-button {
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+            transition: all 0.2s;
+        }
+
+        .save-notes-button:hover {
+            background: var(--accent);
+        }
+
+        /* Insights Section */
+        .insights-section {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--buttonPrimaryBG2) 100%);
+            color: var(--buttonPrimaryText);
+            border: none;
+        }
+
+        .insights-section .card-title {
+            color: var(--buttonPrimaryText);
+        }
+
+        .insight-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .insight-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .insight-icon {
+            font-size: 18px;
+            margin-right: 8px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .analytics-content {
+                grid-template-columns: 1fr;
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .analytics-header {
+                padding: 12px 16px;
+            }
+
+            .analytics-title {
+                font-size: 24px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .calendar-controls {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+
+            .calendar-nav {
+                justify-content: center;
+            }
+
+            .calendar-actions {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-left {
+                gap: 8px;
+            }
+
+            .analytics-title {
+                font-size: 20px;
+            }
+
+
+        }
+
+        /* Loading States */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--subtext);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-subtext {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="analytics-container">
+        <!-- Header -->
+        <header class="analytics-header">
+            <div class="header-left">
+                <h1 class="analytics-title">Posture Analytics</h1>
+            </div>
+            <div class="header-right">
+                <!-- Theme toggle removed - light mode only -->
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="analytics-content">
+            <!-- Main Section -->
+            <div class="main-section">
+                <!-- Calendar Section -->
+                <div class="analytics-card calendar-section">
+                    <h2 class="card-title">Calendar View</h2>
+                    
+                    <div class="calendar-controls">
+                        <div class="calendar-nav">
+                            <button id="prevMonth" class="nav-button">◀</button>
+                            <button id="nextMonth" class="nav-button">▶</button>
+                        </div>
+                        <h3 id="calendarTitle" class="calendar-title">January 2025</h3>
+                        <div class="calendar-actions">
+                            <button id="todayBtn" class="nav-button">Today</button>
+                        </div>
+                    </div>
+
+                    <div class="calendar-week-labels" id="calendarWeekLabels">
+                        <div class="week-label">Mon</div>
+                        <div class="week-label">Tue</div>
+                        <div class="week-label">Wed</div>
+                        <div class="week-label">Thu</div>
+                        <div class="week-label">Fri</div>
+                        <div class="week-label">Sat</div>
+                        <div class="week-label">Sun</div>
+                    </div>
+
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar days will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Statistics Overview -->
+                <div class="analytics-card">
+                    <h2 class="card-title">Statistics Overview</h2>
+                    <div class="stats-grid" id="statsGrid">
+                        <!-- Statistics will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Full Body Scan History -->
+                <div class="analytics-card">
+                    <h2 class="card-title">Full Body Scan History</h2>
+                    <div class="scan-history-grid" id="scanHistoryGrid">
+                        <!-- Scan history will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Section -->
+            <div class="sidebar-section">
+                <!-- Day Details -->
+                <div class="analytics-card">
+                    <h2 class="card-title">Day Details</h2>
+                    <div id="dayDetails">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📅</div>
+                            <div class="empty-state-text">Select a day</div>
+                            <div class="empty-state-subtext">Click on a calendar day to view details</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session History -->
+                <div class="analytics-card">
+                    <h2 class="card-title">Session History</h2>
+                    <div id="sessionHistory">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⏱️</div>
+                            <div class="empty-state-text">No sessions</div>
+                            <div class="empty-state-subtext">Select a day with tracking data</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Insights -->
+                <div class="analytics-card insights-section">
+                    <h2 class="card-title">💡 Insights</h2>
+                    <div id="aiInsights">
+                        <div class="insight-item">
+                            <span class="insight-icon">📈</span>
+                            Your posture tracking consistency has improved this week!
+                        </div>
+                        <div class="insight-item">
+                            <span class="insight-icon">⏰</span>
+                            Best tracking times: 9-11 AM and 2-4 PM
+                        </div>
+                        <div class="insight-item">
+                            <span class="insight-icon">🎯</span>
+                            Try to maintain 60+ minutes daily for optimal results
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="analytics.js"></script>
+</body>
+</html>

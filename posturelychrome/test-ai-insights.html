@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test AI Insights</title>
+    <!-- Chrome AI Origin Trial Token -->
+    <meta http-equiv="origin-trial" content="Aiqz8ZArzAhQ2U24U9mLLJV8l16YNGsuiDqHJcUD3eCqYDbrWpb8qG3BSMXJ4OxDyS6Zw9HlsS5/ZoD0AFDAUQEAAABWeyJvcmlnaW4iOiJodHRwczovL2Nocm9tZS5kZXY6NDQzIiwiZmVhdHVyZSI6IkFJU3VtbWFyaXphdGlvbkFQSSIsImV4cGlyeSI6MTc1MzE0MjQwMH0=" />
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .insight-item {
+            background: linear-gradient(135deg, #FFD045 0%, #F9B52D 100%);
+            color: #2B1E0F;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .insight-icon {
+            font-size: 18px;
+        }
+        button {
+            background: #FFD045;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+        }
+        button:hover {
+            background: #F9B52D;
+        }
+        .test-data {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Insights Test</h1>
+        
+        <div id="status"></div>
+        
+        <h3>Test Controls</h3>
+        <button onclick="testAPIAvailability()">Check API Availability</button>
+        <button onclick="testBasicInsights()">Test Basic Insights</button>
+        <button onclick="testWithGoodData()">Test with Good Data</button>
+        <button onclick="testWithPoorData()">Test with Poor Data</button>
+        
+        <h3>Sample Data</h3>
+        <div class="test-data" id="testData">
+            Click a test button to see sample data...
+        </div>
+        
+        <h3>Generated Insights</h3>
+        <div id="insights">
+            <div class="insight-item">
+                <span class="insight-icon">💡</span>
+                Click a test button to generate insights...
+            </div>
+        </div>
+        
+        <h3>Debug Information</h3>
+        <div id="debug"></div>
+    </div>
+
+    <script type="module">
+        import { AIInsightsManager } from './src/AIInsightsManager.js';
+        
+        let aiManager;
+        
+        // Initialize AI Manager
+        async function initializeAI() {
+            try {
+                aiManager = new AIInsightsManager();
+                const initialized = await aiManager.initialize();
+                
+                const status = document.getElementById('status');
+                if (initialized) {
+                    status.innerHTML = '<div class="status success">✅ AI Insights Manager initialized successfully! Chrome AI Summarizer API is available.</div>';
+                } else {
+                    status.innerHTML = '<div class="status warning">⚠️ AI Insights Manager using fallback mode. Chrome AI API not available.</div>';
+                }
+                
+                updateDebugInfo();
+            } catch (error) {
+                const status = document.getElementById('status');
+                status.innerHTML = `<div class="status error">❌ Failed to initialize AI Insights Manager: ${error.message}</div>`;
+                console.error('Initialization error:', error);
+            }
+        }
+        
+        // Test API availability
+        window.testAPIAvailability = async function() {
+            const debug = document.getElementById('debug');
+            const status = aiManager ? aiManager.getStatus() : { initialized: false, apiAvailable: false, sessionActive: false };
+            
+            debug.innerHTML = `
+                <h4>API Status</h4>
+                <ul>
+                    <li>Summarizer API Available: ${typeof window.Summarizer !== 'undefined' ? '✅ Yes' : '❌ No'}</li>
+                    <li>AI Manager Initialized: ${status.initialized ? '✅ Yes' : '❌ No'}</li>
+                    <li>Session Active: ${status.sessionActive ? '✅ Yes' : '❌ No'}</li>
+                    <li>AI Available: ${aiManager ? (aiManager.isAIAvailable() ? '✅ Yes' : '❌ No') : '❌ No Manager'}</li>
+                </ul>
+            `;
+            
+            if (typeof window.Summarizer !== 'undefined') {
+                try {
+                    const availability = await window.Summarizer.availability();
+                    debug.innerHTML += `<p><strong>Summarizer Availability:</strong> ${availability}</p>`;
+                } catch (error) {
+                    debug.innerHTML += `<p><strong>Summarizer Check Error:</strong> ${error.message}</p>`;
+                }
+            }
+        };
+        
+        // Test basic insights
+        window.testBasicInsights = async function() {
+            if (!aiManager) {
+                alert('AI Manager not initialized');
+                return;
+            }
+            
+            const testDate = new Date();
+            const testData = {
+                minutes: 30,
+                scoreSum: 210,
+                samples: 3,
+                sessions: [
+                    { startTime: '09:00', endTime: '09:15', minutes: 15, avgScore: 75 },
+                    { startTime: '14:30', endTime: '14:45', minutes: 15, avgScore: 65 }
+                ]
+            };
+            
+            document.getElementById('testData').innerHTML = `
+                <strong>Test Date:</strong> ${testDate.toDateString()}<br>
+                <strong>Minutes Tracked:</strong> ${testData.minutes}<br>
+                <strong>Average Score:</strong> ${Math.round(testData.scoreSum / testData.samples)}<br>
+                <strong>Sessions:</strong> ${testData.sessions.length}
+            `;
+            
+            try {
+                const insights = await aiManager.generateInsights(testDate, testData);
+                displayInsights(insights);
+            } catch (error) {
+                console.error('Error generating insights:', error);
+                document.getElementById('insights').innerHTML = `
+                    <div class="insight-item">
+                        <span class="insight-icon">❌</span>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        };
+        
+        // Test with good data
+        window.testWithGoodData = async function() {
+            if (!aiManager) {
+                alert('AI Manager not initialized');
+                return;
+            }
+            
+            const testDate = new Date();
+            const testData = {
+                minutes: 85,
+                scoreSum: 540,
+                samples: 6,
+                sessions: [
+                    { startTime: '09:00', endTime: '09:20', minutes: 20, avgScore: 92 },
+                    { startTime: '11:15', endTime: '11:35', minutes: 20, avgScore: 88 },
+                    { startTime: '14:00', endTime: '14:25', minutes: 25, avgScore: 90 },
+                    { startTime: '16:30', endTime: '16:50', minutes: 20, avgScore: 85 }
+                ]
+            };
+            
+            document.getElementById('testData').innerHTML = `
+                <strong>Test Date:</strong> ${testDate.toDateString()}<br>
+                <strong>Minutes Tracked:</strong> ${testData.minutes} (Goal: 60+) ✅<br>
+                <strong>Average Score:</strong> ${Math.round(testData.scoreSum / testData.samples)} (Excellent) ✅<br>
+                <strong>Sessions:</strong> ${testData.sessions.length} (Good consistency) ✅
+            `;
+            
+            try {
+                const insights = await aiManager.generateInsights(testDate, testData);
+                displayInsights(insights);
+            } catch (error) {
+                console.error('Error generating insights:', error);
+                document.getElementById('insights').innerHTML = `
+                    <div class="insight-item">
+                        <span class="insight-icon">❌</span>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        };
+        
+        // Test with poor data
+        window.testWithPoorData = async function() {
+            if (!aiManager) {
+                alert('AI Manager not initialized');
+                return;
+            }
+            
+            const testDate = new Date();
+            const testData = {
+                minutes: 15,
+                scoreSum: 105,
+                samples: 2,
+                sessions: [
+                    { startTime: '15:00', endTime: '15:15', minutes: 15, avgScore: 52 }
+                ]
+            };
+            
+            document.getElementById('testData').innerHTML = `
+                <strong>Test Date:</strong> ${testDate.toDateString()}<br>
+                <strong>Minutes Tracked:</strong> ${testData.minutes} (Goal: 60+) ❌<br>
+                <strong>Average Score:</strong> ${Math.round(testData.scoreSum / testData.samples)} (Needs improvement) ⚠️<br>
+                <strong>Sessions:</strong> ${testData.sessions.length} (Low activity) ⚠️
+            `;
+            
+            try {
+                const insights = await aiManager.generateInsights(testDate, testData);
+                displayInsights(insights);
+            } catch (error) {
+                console.error('Error generating insights:', error);
+                document.getElementById('insights').innerHTML = `
+                    <div class="insight-item">
+                        <span class="insight-icon">❌</span>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        };
+        
+        // Display insights
+        function displayInsights(insights) {
+            const insightsContainer = document.getElementById('insights');
+            
+            if (!insights || insights.length === 0) {
+                insightsContainer.innerHTML = `
+                    <div class="insight-item">
+                        <span class="insight-icon">❓</span>
+                        No insights generated
+                    </div>
+                `;
+                return;
+            }
+            
+            insightsContainer.innerHTML = insights.map(insight => `
+                <div class="insight-item">
+                    <span class="insight-icon">${insight.icon || '💡'}</span>
+                    ${insight.text || 'No text available'}
+                </div>
+            `).join('');
+        }
+        
+        // Update debug info
+        function updateDebugInfo() {
+            const debug = document.getElementById('debug');
+            debug.innerHTML = `
+                <h4>Environment</h4>
+                <ul>
+                    <li>User Agent: ${navigator.userAgent}</li>
+                    <li>Secure Context: ${isSecureContext ? '✅ Yes' : '❌ No'}</li>
+                    <li>Chrome AI APIs: ${typeof window.ai !== 'undefined' ? '✅ Available' : '❌ Not Available'}</li>
+                    <li>Summarizer API: ${typeof window.Summarizer !== 'undefined' ? '✅ Available' : '❌ Not Available'}</li>
+                </ul>
+            `;
+        }
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initializeAI);
+    </script>
+</body>
+</html>

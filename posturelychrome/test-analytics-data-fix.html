@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Analytics Data Fix</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Analytics Data Integrity Test</h1>
+        <p>Testing the DataIntegrityValidator and analytics data display fixes.</p>
+        
+        <button onclick="testDataValidation()">Test Data Validation</button>
+        <button onclick="testIncompleteData()">Test Incomplete Data Fix</button>
+        <button onclick="testDailyMinutesValidation()">Test Daily Minutes Validation</button>
+        <button onclick="testFormatting()">Test Formatting Functions</button>
+        <button onclick="runAllTests()">Run All Tests</button>
+        
+        <div id="testResults"></div>
+    </div>
+
+    <script type="module">
+        import { DataIntegrityValidator } from './src/DataIntegrityValidator.js';
+        import { UIComponentManager } from './src/UIComponentManager.js';
+
+        const validator = new DataIntegrityValidator();
+        const uiManager = new UIComponentManager();
+        
+        window.validator = validator;
+        window.uiManager = uiManager;
+
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+        }
+
+        // Test data validation
+        window.testDataValidation = function() {
+            clearResults();
+            addResult('<h3>Testing Data Validation</h3>');
+
+            // Test valid data
+            const validData = {
+                minutes: 45,
+                scoreSum: 320,
+                samples: 4,
+                sessions: [
+                    { id: '1', startTime: '2025-01-01T09:00:00Z', endTime: '2025-01-01T09:15:00Z', minutes: 15, avgScore: 80 },
+                    { id: '2', startTime: '2025-01-01T14:00:00Z', endTime: '2025-01-01T14:30:00Z', minutes: 30, avgScore: 75 }
+                ],
+                notes: 'Good posture day'
+            };
+
+            const validated = validator.validateAnalyticsData(validData);
+            addResult(`✅ Valid data validation: ${JSON.stringify(validated, null, 2)}`, 'success');
+
+            // Test invalid data
+            const invalidData = {
+                minutes: "not a number",
+                scoreSum: -10,
+                samples: null,
+                sessions: "not an array",
+                notes: 123
+            };
+
+            const repairedInvalid = validator.validateAnalyticsData(invalidData);
+            addResult(`🔧 Invalid data repaired: ${JSON.stringify(repairedInvalid, null, 2)}`, 'warning');
+
+            // Test null data
+            const nullRepaired = validator.validateAnalyticsData(null);
+            addResult(`🔧 Null data repaired: ${JSON.stringify(nullRepaired, null, 2)}`, 'warning');
+        };
+
+        // Test incomplete data fix
+        window.testIncompleteData = function() {
+            clearResults();
+            addResult('<h3>Testing Incomplete Data Fix</h3>');
+
+            // Test data with "13/60" style incomplete minutes
+            const incompleteData = {
+                minutes: 13, // This should be the actual minutes, not "13/60"
+                scoreSum: 240,
+                samples: 3,
+                sessions: [
+                    { id: '1', startTime: '2025-01-01T09:00:00Z', minutes: 5, avgScore: 80 },
+                    { id: '2', startTime: '2025-01-01T14:00:00Z', minutes: 8, avgScore: 75 }
+                ],
+                notes: ''
+            };
+
+            const validation = validator.validateDailyMinutes(incompleteData);
+            addResult(`📊 Daily minutes validation: ${JSON.stringify(validation, null, 2)}`, 
+                validation.isValid ? 'success' : 'error');
+
+            const repaired = validator.repairIncompleteData(incompleteData);
+            addResult(`🔧 Repaired incomplete data: ${JSON.stringify(repaired, null, 2)}`, 'info');
+        };
+
+        // Test daily minutes validation
+        window.testDailyMinutesValidation = function() {
+            clearResults();
+            addResult('<h3>Testing Daily Minutes Validation</h3>');
+
+            // Test mismatched minutes (common issue causing "13/60" display)
+            const mismatchedData = {
+                minutes: 60, // Stored total
+                scoreSum: 240,
+                samples: 3,
+                sessions: [
+                    { id: '1', minutes: 20, avgScore: 80 },
+                    { id: '2', minutes: 25, avgScore: 75 },
+                    { id: '3', minutes: 10, avgScore: 85 }
+                ] // Total should be 55, not 60
+            };
+
+            const validation = validator.validateDailyMinutes(mismatchedData);
+            addResult(`⚠️ Mismatch detected: ${JSON.stringify(validation, null, 2)}`, 
+                validation.isValid ? 'success' : 'warning');
+
+            // Test correct data
+            const correctData = {
+                minutes: 55,
+                sessions: [
+                    { id: '1', minutes: 20, avgScore: 80 },
+                    { id: '2', minutes: 25, avgScore: 75 },
+                    { id: '3', minutes: 10, avgScore: 85 }
+                ]
+            };
+
+            const correctValidation = validator.validateDailyMinutes(correctData);
+            addResult(`✅ Correct data validation: ${JSON.stringify(correctValidation, null, 2)}`, 'success');
+        };
+
+        // Test formatting functions
+        window.testFormatting = function() {
+            clearResults();
+            addResult('<h3>Testing Formatting Functions</h3>');
+
+            // Test duration formatting
+            const durations = [0, 5, 30, 60, 65, 120, 125];
+            durations.forEach(minutes => {
+                const formatted = validator.formatDuration(minutes);
+                addResult(`Duration ${minutes} minutes → "${formatted}"`, 'info');
+            });
+
+            // Test time formatting
+            const times = [
+                '2025-01-01T09:00:00Z',
+                '2025-01-01T14:30:00Z',
+                'invalid-time',
+                null,
+                undefined
+            ];
+            times.forEach(time => {
+                const formatted = validator.formatTime(time);
+                addResult(`Time "${time}" → "${formatted}"`, 'info');
+            });
+        };
+
+        // Run all tests
+        window.runAllTests = function() {
+            clearResults();
+            addResult('<h2>Running All Tests</h2>');
+            
+            setTimeout(() => testDataValidation(), 100);
+            setTimeout(() => testIncompleteData(), 500);
+            setTimeout(() => testDailyMinutesValidation(), 900);
+            setTimeout(() => testFormatting(), 1300);
+            
+            setTimeout(() => {
+                addResult('<h3>All Tests Complete!</h3>', 'success');
+                addResult('Check the results above to verify data integrity validation is working correctly.', 'info');
+            }, 1700);
+        };
+
+        // Auto-run tests on load
+        setTimeout(() => {
+            addResult('DataIntegrityValidator and UIComponentManager loaded successfully!', 'success');
+            addResult('Click the buttons above to test different validation scenarios.', 'info');
+        }, 100);
+    </script>
+</body>
+</html>

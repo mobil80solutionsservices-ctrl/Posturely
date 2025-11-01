@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Scan Translation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .button {
+            padding: 12px 20px;
+            margin: 8px;
+            border: none;
+            border-radius: 8px;
+            background: #007AFF;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .button:hover {
+            background: #0056CC;
+        }
+        
+        .language-selector {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        .test-text {
+            margin: 8px 0;
+            padding: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+        
+        .original {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .translated {
+            color: #007AFF;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Scan Translation Test</h1>
+        <p>This page tests the translation of all scan-related text content.</p>
+        
+        <div class="language-selector">
+            <h3>Select Language for Testing:</h3>
+            <button class="button" onclick="testLanguage('en')">English</button>
+            <button class="button" onclick="testLanguage('es')">Español</button>
+            <button class="button" onclick="testLanguage('fr')">Français</button>
+            <button class="button" onclick="testLanguage('hi')">हिंदी</button>
+            <button class="button" onclick="testLanguage('zh')">中文</button>
+        </div>
+        
+        <div id="testResults">
+            <p>Select a language to test translations...</p>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { LocalizationService } from './src/LocalizationService.js';
+        
+        const localizationService = new LocalizationService();
+        await localizationService.initialize();
+        
+        // Make it globally available
+        window.localizationService = localizationService;
+        
+        // Test texts for scan functionality
+        window.scanTestTexts = [
+            // Page titles and headers
+            '📷 Full Body Posture Scan',
+            'Get comprehensive posture analysis with AI-powered insights',
+            
+            // Button texts
+            '📸 Start Scan',
+            '📸 Capture',
+            '🔄 Retake',
+            '📸 New Scan',
+            '📊 View Past Data',
+            '🏃‍♂️ Do Guided Exercises',
+            
+            // Status messages
+            'Initializing camera...',
+            'Position yourself for full body capture',
+            'Full body detected! Hold position...',
+            'Front capture starting...',
+            'Side capture starting...',
+            'Please turn to your side',
+            'Capturing front...',
+            'Capturing side...',
+            'Scan complete! Generating report...',
+            'Analyzing posture...',
+            'Analysis complete! Check your posture report below.',
+            
+            // Results display
+            '🎉 Full Body Scan Complete!',
+            'Overall Posture Score',
+            'out of 100',
+            '📊 Detailed Analysis',
+            'Neck Tilt',
+            'Shoulder Tilt',
+            'Hip Alignment',
+            'Overall Alignment',
+            '👁️ Multi-View Analysis',
+            'Front View Score',
+            'Side View Score',
+            '🤖 AI Analysis & Recommendations',
+            
+            // Quality indicators
+            'Good',
+            'Needs attention',
+            'Excellent',
+            'Needs work',
+            
+            // Countdown
+            'Get Ready for Scan!',
+            'Position yourself for full body capture',
+            'FRONT CAPTURE',
+            'SIDE CAPTURE',
+            
+            // History and details
+            '📷 Scan Details',
+            '📊 Measurements',
+            'Views Captured',
+            '💡 Recommendations',
+            
+            // Recommendations
+            'Practice neck alignment exercises to reduce forward head posture',
+            'Focus on shoulder blade strengthening exercises',
+            'Work on hip flexor stretches and core strengthening',
+            'Consider taking regular posture breaks throughout the day',
+            'Great posture! Keep up the good work with regular movement breaks',
+            
+            // Error messages
+            'Failed to access camera. Please check permissions.',
+            'No pose detected. Please ensure you are visible in the camera.',
+            'Failed to analyze scan. Please try again.',
+            
+            // Scan history
+            'No scans yet',
+            'Complete a full body scan to see your posture analysis history',
+            'Multi-view scan',
+            'Analysis complete',
+            'views captured',
+            'recommendations',
+            
+            // Save message
+            '📈 Your scan results have been saved to your Full Body Scan History in View Past Data'
+        ];
+        
+        window.testLanguage = async function(languageCode) {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = `<h3>Testing translations for: ${languageCode}</h3><p>Translating ${window.scanTestTexts.length} texts...</p>`;
+            
+            let html = `<h3>Translation Results for: ${languageCode}</h3>`;
+            
+            for (let i = 0; i < window.scanTestTexts.length; i++) {
+                const originalText = window.scanTestTexts[i];
+                
+                try {
+                    const translatedText = await window.localizationService.translateText(originalText, languageCode);
+                    
+                    html += `
+                        <div class="test-section">
+                            <div class="test-text original">Original: ${originalText}</div>
+                            <div class="test-text translated">Translated: ${translatedText}</div>
+                            <div style="font-size: 12px; color: ${translatedText !== originalText ? 'green' : 'orange'};">
+                                ${translatedText !== originalText ? '✅ Translated' : '⚠️ No translation (same as original)'}
+                            </div>
+                        </div>
+                    `;
+                } catch (error) {
+                    html += `
+                        <div class="test-section">
+                            <div class="test-text original">Original: ${originalText}</div>
+                            <div class="test-text" style="color: red;">Error: ${error.message}</div>
+                        </div>
+                    `;
+                }
+                
+                // Update progress
+                if (i % 10 === 0) {
+                    resultsDiv.innerHTML = `<h3>Testing translations for: ${languageCode}</h3><p>Progress: ${i + 1}/${window.scanTestTexts.length}</p>`;
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to show progress
+                }
+            }
+            
+            resultsDiv.innerHTML = html;
+        };
+        
+        console.log('Scan translation test ready');
+    </script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AI Test Button Demo</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            padding: 20px; 
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .test-section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+        }
+        .button { 
+            padding: 8px 16px; 
+            margin: 4px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-family: inherit;
+        }
+        .button-secondary { 
+            background: #f0f0f0; 
+            color: #333; 
+        }
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .ai-test-results {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-header {
+            font-size: 14px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .test-content {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .test-item {
+            margin: 6px 0;
+            padding: 6px 8px;
+            border-radius: 4px;
+            background: white;
+        }
+        .test-success {
+            border-left: 3px solid #34C759;
+        }
+        .test-error {
+            border-left: 3px solid #EF4444;
+        }
+        .test-warning {
+            border-left: 3px solid #FFA000;
+        }
+        .test-summary {
+            margin-top: 8px;
+            padding: 8px;
+            background: #007AFF;
+            color: white;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>🧪 AI Test Button Demo</h1>
+    
+    <div class="test-section">
+        <h3>Chrome AI Summarizer Test</h3>
+        <p>This button tests the Chrome AI Summarizer API functionality:</p>
+        
+        <button id="testAIBtn" class="button button-secondary">🧪 Test AI</button>
+        
+        <div id="aiTestResults" class="ai-test-results hidden">
+            <div class="test-header">🧪 AI Test Results</div>
+            <div id="aiTestContent" class="test-content">
+                <!-- Test results will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>What This Tests:</h3>
+        <ul>
+            <li>✅ Chrome AI API availability</li>
+            <li>✅ Summarizer session creation</li>
+            <li>✅ Actual text summarization</li>
+            <li>✅ Error handling and fallbacks</li>
+        </ul>
+    </div>
+
+    <script>
+        // Simulate the AI test functionality
+        async function testAIFunctionality() {
+            const aiTestResults = document.getElementById('aiTestResults');
+            const aiTestContent = document.getElementById('aiTestContent');
+            
+            if (!aiTestResults || !aiTestContent) return;
+            
+            // Show test results section
+            aiTestResults.classList.remove('hidden');
+            aiTestContent.innerHTML = '<div class="test-item">🔄 Running AI tests...</div>';
+            
+            const results = [];
+            
+            try {
+                // Test 1: Check if APIs exist
+                results.push('<div class="test-item test-success">✅ Starting AI functionality test</div>');
+                
+                const hasSummarizer = 'Summarizer' in self;
+                results.push(`<div class="test-item ${hasSummarizer ? 'test-success' : 'test-error'}">
+                    ${hasSummarizer ? '✅' : '❌'} Summarizer API ${hasSummarizer ? 'available' : 'not available'}
+                </div>`);
+                
+                if (hasSummarizer) {
+                    // Test 2: Check availability
+                    try {
+                        const availability = await self.Summarizer.availability();
+                        results.push(`<div class="test-item test-success">✅ Summarizer availability: ${availability}</div>`);
+                        
+                        if (availability === 'readily' || availability === 'after-download') {
+                            // Test 3: Create session
+                            const session = await self.Summarizer.create({
+                                type: 'tldr',
+                                format: 'plain-text',
+                                length: 'medium',
+                                outputLanguage: 'en'
+                            });
+                            results.push('<div class="test-item test-success">✅ Summarizer session created successfully</div>');
+                            
+                            // Test 4: Actual summarization
+                            const testText = "This is a comprehensive test of the Chrome AI Summarizer API functionality. The Posturely extension leverages Chrome's built-in AI capabilities to generate intelligent summaries of posture tracking sessions. This provides users with personalized insights about their sitting habits, posture patterns, and overall ergonomic health throughout their workday. The AI can analyze session data including duration, posture scores, and user mood to create meaningful summaries.";
+                            
+                            const summary = await session.summarize(testText);
+                            session.destroy();
+                            
+                            results.push('<div class="test-item test-success">✅ Summarization completed successfully</div>');
+                            results.push(`<div class="test-summary">
+                                <strong>📝 AI Generated Summary:</strong><br>
+                                "${summary}"
+                            </div>`);
+                        } else {
+                            results.push(`<div class="test-item test-warning">⚠️ Summarizer not ready: ${availability}</div>`);
+                            results.push('<div class="test-item">ℹ️ You may need to enable Chrome flags or join the Early Preview Program</div>');
+                        }
+                    } catch (apiError) {
+                        results.push(`<div class="test-item test-error">❌ API test failed: ${apiError.message}</div>`);
+                        
+                        if (apiError.message.includes('outputLanguage')) {
+                            results.push('<div class="test-item">ℹ️ Trying without outputLanguage parameter...</div>');
+                            try {
+                                const session = await self.Summarizer.create({
+                                    type: 'tldr',
+                                    format: 'plain-text',
+                                    length: 'medium'
+                                });
+                                results.push('<div class="test-item test-success">✅ Fallback session created (no outputLanguage)</div>');
+                                session.destroy();
+                            } catch (fallbackError) {
+                                results.push(`<div class="test-item test-error">❌ Fallback also failed: ${fallbackError.message}</div>`);
+                            }
+                        }
+                    }
+                } else {
+                    results.push('<div class="test-item test-error">❌ Chrome AI Summarizer API not available</div>');
+                    results.push('<div class="test-item">ℹ️ Make sure you are using Chrome Canary/Dev with AI flags enabled</div>');
+                }
+                
+            } catch (error) {
+                results.push(`<div class="test-item test-error">❌ Test failed: ${error.message}</div>`);
+            }
+            
+            // Update results
+            aiTestContent.innerHTML = results.join('');
+        }
+
+        // Set up the test button
+        document.getElementById('testAIBtn').onclick = async () => {
+            const btn = document.getElementById('testAIBtn');
+            btn.textContent = '🔄 Testing...';
+            btn.disabled = true;
+            
+            try {
+                await testAIFunctionality();
+            } catch (error) {
+                console.error('Test failed:', error);
+            } finally {
+                btn.textContent = '🧪 Test AI';
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immediate Camera Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .status {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 20px auto;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+        }
+        
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .exercise-execution {
+            padding: 20px 0;
+        }
+        
+        .execution-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .exercise-status {
+            background: rgba(0,0,0,0.04);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .status-text {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .status-loading { color: #2196F3; }
+        .status-ready { color: #4CAF50; }
+        .status-error { color: #f44336; }
+    </style>
+</head>
+<body>
+    <h1>Immediate Camera Test</h1>
+    
+    <div class="test-section">
+        <h2>Exercise Selection Simulation</h2>
+        <button id="selectExercise" class="button">Select Neck Rotation Exercise</button>
+        <button id="startExercise" class="button" disabled>🚀 Start Exercise</button>
+        <div id="selectionStatus" class="status">
+            Click "Select Neck Rotation Exercise" first...
+        </div>
+    </div>
+    
+    <!-- Exercise Execution UI (hidden by default) -->
+    <div id="exerciseExecution" class="exercise-execution hidden">
+        <div class="execution-header">
+            <h2 id="exerciseTitle">Exercise in Progress</h2>
+            <button id="stopExerciseBtn" class="button">⏹️ Stop Exercise</button>
+        </div>
+        
+        <div class="camera-section">
+            <div class="video-container">
+                <video id="exerciseVideo" autoplay playsinline muted></video>
+                <canvas id="exerciseCanvas"></canvas>
+            </div>
+        </div>
+        
+        <div class="exercise-status">
+            <div id="exerciseStatusText" class="status-text">Initializing...</div>
+        </div>
+    </div>
+
+    <script>
+        let selectedExercise = null;
+        let currentStream = null;
+        
+        // DOM elements
+        const selectExercise = document.getElementById('selectExercise');
+        const startExercise = document.getElementById('startExercise');
+        const stopExercise = document.getElementById('stopExerciseBtn');
+        const selectionStatus = document.getElementById('selectionStatus');
+        const exerciseExecution = document.getElementById('exerciseExecution');
+        const exerciseTitle = document.getElementById('exerciseTitle');
+        const exerciseStatusText = document.getElementById('exerciseStatusText');
+        const video = document.getElementById('exerciseVideo');
+        const canvas = document.getElementById('exerciseCanvas');
+        
+        // Select exercise
+        selectExercise.addEventListener('click', () => {
+            selectedExercise = 'neck-rotation';
+            startExercise.disabled = false;
+            startExercise.textContent = '🚀 Start Neck Rotation';
+            selectionStatus.innerHTML = '✅ Neck Rotation exercise selected. Click "Start Exercise" to begin.';
+        });
+        
+        // Start exercise - show camera immediately
+        startExercise.addEventListener('click', async () => {
+            try {
+                console.log('🚀 Starting exercise - showing camera immediately');
+                
+                // 1. Show camera UI immediately (like scan page)
+                showExerciseExecution();
+                updateExerciseStatus('Initializing camera...', 'loading');
+                
+                // 2. Setup camera
+                await setupCamera();
+                updateExerciseStatus('Camera ready. Starting exercise...', 'ready');
+                
+                // 3. Simulate exercise start
+                setTimeout(() => {
+                    updateExerciseStatus('Exercise in progress...', 'ready');
+                }, 1000);
+                
+                console.log('✅ Exercise started successfully');
+                
+            } catch (error) {
+                console.error('❌ Failed to start exercise:', error);
+                updateExerciseStatus(`Failed to start exercise: ${error.message}`, 'error');
+            }
+        });
+        
+        // Stop exercise
+        stopExercise.addEventListener('click', () => {
+            if (currentStream) {
+                const tracks = currentStream.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+                currentStream = null;
+            }
+            
+            showExerciseSelection();
+        });
+        
+        // Show exercise execution UI
+        function showExerciseExecution() {
+            // Hide selection
+            document.querySelector('.test-section').style.display = 'none';
+            
+            // Show execution
+            exerciseExecution.classList.remove('hidden');
+            exerciseTitle.textContent = 'Neck Rotation (Left-Right)';
+        }
+        
+        // Show exercise selection UI
+        function showExerciseSelection() {
+            // Show selection
+            document.querySelector('.test-section').style.display = 'block';
+            
+            // Hide execution
+            exerciseExecution.classList.add('hidden');
+        }
+        
+        // Update exercise status
+        function updateExerciseStatus(message, type = 'info') {
+            exerciseStatusText.textContent = message;
+            exerciseStatusText.className = `status-text status-${type}`;
+        }
+        
+        // Setup camera
+        async function setupCamera() {
+            console.log('🎥 Setting up camera...');
+            
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: 'user'
+                }
+            });
+            
+            video.srcObject = stream;
+            currentStream = stream;
+            
+            // Wait for video to load
+            await new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 480;
+                    resolve();
+                };
+            });
+            
+            // Start simple pose simulation
+            startPoseSimulation();
+            
+            console.log('✅ Camera setup complete');
+        }
+        
+        // Simple pose simulation
+        function startPoseSimulation() {
+            const ctx = canvas.getContext('2d');
+            let frame = 0;
+            
+            function drawSimulatedPose() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw some moving points to simulate pose detection
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const time = frame * 0.1;
+                
+                // Simulate key points
+                const points = [
+                    { x: centerX + Math.sin(time) * 20, y: centerY - 100 }, // Head
+                    { x: centerX - 50 + Math.sin(time) * 10, y: centerY }, // Left shoulder
+                    { x: centerX + 50 + Math.sin(time) * 10, y: centerY }, // Right shoulder
+                    { x: centerX - 30, y: centerY + 100 }, // Left hip
+                    { x: centerX + 30, y: centerY + 100 }, // Right hip
+                ];
+                
+                // Draw points
+                ctx.fillStyle = '#FED867';
+                points.forEach(point => {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+                
+                // Draw connections
+                ctx.strokeStyle = '#FED867';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(points[1].x, points[1].y); // Left shoulder
+                ctx.lineTo(points[2].x, points[2].y); // Right shoulder
+                ctx.moveTo(points[1].x, points[1].y); // Left shoulder
+                ctx.lineTo(points[3].x, points[3].y); // Left hip
+                ctx.moveTo(points[2].x, points[2].y); // Right shoulder
+                ctx.lineTo(points[4].x, points[4].y); // Right hip
+                ctx.moveTo(points[3].x, points[3].y); // Left hip
+                ctx.lineTo(points[4].x, points[4].y); // Right hip
+                ctx.stroke();
+                
+                frame++;
+                requestAnimationFrame(drawSimulatedPose);
+            }
+            
+            drawSimulatedPose();
+        }
+    </script>
+</body>
+</html>

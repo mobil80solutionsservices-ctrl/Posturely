@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercise Pose Detection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 20px auto;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+        }
+        
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .pose-data {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Exercise Pose Detection Test</h1>
+    
+    <div class="test-section">
+        <h2>Setup Test</h2>
+        <button id="setupTest" class="button">Setup Camera & Pose Detection</button>
+        <button id="stopTest" class="button" disabled>Stop Test</button>
+        <div id="setupStatus" class="status">
+            Click "Setup Camera & Pose Detection" to start...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Video Feed & Pose Visualization</h2>
+        <div class="video-container hidden" id="videoContainer">
+            <video id="exerciseVideo" autoplay playsinline muted></video>
+            <canvas id="exerciseCanvas"></canvas>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Pose Detection Status</h2>
+        <div id="poseStatus" class="status">
+            Setup camera first...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Live Pose Data</h2>
+        <div id="poseData" class="pose-data">
+            No pose data yet...
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Calibration Test</h2>
+        <button id="testCalibration" class="button" disabled>Test Calibration Data Collection</button>
+        <div id="calibrationStatus" class="status">
+            Setup pose detection first...
+        </div>
+    </div>
+
+    <script type="module">
+        // Mock chrome.runtime.getURL for testing
+        if (typeof chrome === 'undefined') {
+            window.chrome = {
+                runtime: {
+                    getURL: (path) => `./${path}`
+                }
+            };
+        }
+        
+        // Import the classes we need to test
+        import { ExerciseOrchestrator } from './src/ExerciseOrchestrator.js';
+        
+        let orchestrator = null;
+        let poseDetectionRunning = false;
+        let currentStream = null;
+        let poseUpdateCount = 0;
+        
+        // DOM elements
+        const setupTest = document.getElementById('setupTest');
+        const stopTest = document.getElementById('stopTest');
+        const testCalibration = document.getElementById('testCalibration');
+        const setupStatus = document.getElementById('setupStatus');
+        const poseStatus = document.getElementById('poseStatus');
+        const calibrationStatus = document.getElementById('calibrationStatus');
+        const poseData = document.getElementById('poseData');
+        const videoContainer = document.getElementById('videoContainer');
+        const video = document.getElementById('exerciseVideo');
+        const canvas = document.getElementById('exerciseCanvas');
+        
+        // Setup test
+        setupTest.addEventListener('click', async () => {
+            try {
+                setupStatus.innerHTML = '🔄 Setting up camera and pose detection...';
+                setupStatus.className = 'status';
+                
+                // Setup camera
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }
+                });
+                
+                video.srcObject = stream;
+                currentStream = stream;
+                
+                // Wait for video to load
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        canvas.width = video.videoWidth || 640;
+                        canvas.height = video.videoHeight || 480;
+                        resolve();
+                    };
+                });
+                
+                // Initialize orchestrator
+                orchestrator = new ExerciseOrchestrator();
+                await orchestrator.initialize();
+                
+                // Start pose detection simulation
+                startPoseDetectionTest();
+                
+                videoContainer.classList.remove('hidden');
+                setupStatus.innerHTML = '✅ Camera and pose detection setup complete!';
+                setupStatus.className = 'status success';
+                
+                // Enable other tests
+                setupTest.disabled = true;
+                stopTest.disabled = false;
+                testCalibration.disabled = false;
+                
+                poseStatus.innerHTML = 'Pose detection running...';
+                calibrationStatus.innerHTML = 'Ready to test calibration...';
+                
+            } catch (error) {
+                setupStatus.innerHTML = `❌ Setup failed: ${error.message}`;
+                setupStatus.className = 'status error';
+                console.error('Setup error:', error);
+            }
+        });
+        
+        // Stop test
+        stopTest.addEventListener('click', () => {
+            poseDetectionRunning = false;
+            
+            if (currentStream) {
+                const tracks = currentStream.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+                currentStream = null;
+            }
+            
+            if (orchestrator) {
+                orchestrator.cleanup();
+                orchestrator = null;
+            }
+            
+            videoContainer.classList.add('hidden');
+            setupStatus.innerHTML = '⏹️ Test stopped';
+            setupStatus.className = 'status';
+            
+            // Reset buttons
+            setupTest.disabled = false;
+            stopTest.disabled = true;
+            testCalibration.disabled = true;
+            
+            poseStatus.innerHTML = 'Setup camera first...';
+            calibrationStatus.innerHTML = 'Setup pose detection first...';
+            poseData.innerHTML = 'No pose data yet...';
+        });
+        
+        // Test calibration
+        testCalibration.addEventListener('click', async () => {
+            try {
+                calibrationStatus.innerHTML = '🔄 Testing calibration data collection...';
+                calibrationStatus.className = 'status';
+                
+                if (!orchestrator || !orchestrator.poseValidator) {
+                    throw new Error('Orchestrator or pose validator not available');
+                }
+                
+                // Start calibration
+                await orchestrator.poseValidator.startCalibration();
+                
+                // Wait 3 seconds
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // Check calibration data
+                const calibrationData = orchestrator.poseValidator.calibrationData;
+                
+                calibrationStatus.innerHTML = `
+                    ✅ Calibration test complete!<br>
+                    Collected ${calibrationData.length} pose samples<br>
+                    Expected: ~60 samples (3 seconds × 20 samples/second)
+                `;
+                calibrationStatus.className = calibrationData.length > 30 ? 'status success' : 'status error';
+                
+                // Stop calibration
+                orchestrator.poseValidator.stopCalibration();
+                
+            } catch (error) {
+                calibrationStatus.innerHTML = `❌ Calibration test failed: ${error.message}`;
+                calibrationStatus.className = 'status error';
+                console.error('Calibration test error:', error);
+            }
+        });
+        
+        // Pose detection simulation
+        function startPoseDetectionTest() {
+            poseDetectionRunning = true;
+            poseUpdateCount = 0;
+            
+            const detectPose = async () => {
+                if (poseDetectionRunning && video.readyState >= 2) {
+                    try {
+                        // Generate simulated pose data
+                        const simulatedPose = generateSimulatedPose();
+                        
+                        // Update orchestrator's pose validator
+                        if (orchestrator && orchestrator.poseValidator) {
+                            orchestrator.poseValidator.updateCurrentPose(simulatedPose);
+                        }
+                        
+                        // Update UI
+                        poseUpdateCount++;
+                        updatePoseStatus(simulatedPose);
+                        drawPose(simulatedPose);
+                        
+                    } catch (error) {
+                        console.error('Pose detection error:', error);
+                    }
+                }
+                
+                if (poseDetectionRunning) {
+                    requestAnimationFrame(detectPose);
+                }
+            };
+            
+            requestAnimationFrame(detectPose);
+        }
+        
+        function generateSimulatedPose() {
+            const baseTime = Date.now() / 1000;
+            const variation = Math.sin(baseTime) * 0.02;
+            
+            const landmarks = [
+                // Nose
+                { x: 0.5 + variation, y: 0.2, z: 0, visibility: 1 },
+                // Shoulders
+                { x: 0.4 + variation * 0.5, y: 0.35, z: 0, visibility: 1 },
+                { x: 0.6 + variation * 0.5, y: 0.35, z: 0, visibility: 1 },
+                // Add more landmarks as needed...
+            ];
+            
+            return {
+                landmarks,
+                keypoints: landmarks.map((p, idx) => ({
+                    part: `landmark_${idx}`,
+                    position: { 
+                        x: p.x * (video.videoWidth || 640), 
+                        y: p.y * (video.videoHeight || 480) 
+                    },
+                    score: p.visibility || 1
+                }))
+            };
+        }
+        
+        function updatePoseStatus(pose) {
+            poseStatus.innerHTML = `
+                Pose detection active<br>
+                Updates: ${poseUpdateCount}<br>
+                Landmarks: ${pose.landmarks?.length || 0}<br>
+                Keypoints: ${pose.keypoints?.length || 0}<br>
+                Last update: ${new Date().toLocaleTimeString()}
+            `;
+            
+            // Update pose data display
+            if (pose.landmarks && pose.landmarks.length > 0) {
+                const sample = pose.landmarks.slice(0, 3); // Show first 3 landmarks
+                poseData.innerHTML = `
+                    Sample landmarks (first 3):<br>
+                    ${sample.map((p, i) => 
+                        `${i}: x=${p.x.toFixed(3)}, y=${p.y.toFixed(3)}, vis=${p.visibility.toFixed(2)}`
+                    ).join('<br>')}
+                `;
+            }
+        }
+        
+        function drawPose(pose) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (pose.keypoints) {
+                ctx.fillStyle = '#00ff00';
+                pose.keypoints.forEach(keypoint => {
+                    if (keypoint.score > 0.5) {
+                        ctx.beginPath();
+                        ctx.arc(keypoint.position.x, keypoint.position.y, 5, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

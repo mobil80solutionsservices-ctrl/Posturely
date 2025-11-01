@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome AI API Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-weight: 600;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        pre { background: #f8f9fa; padding: 12px; border-radius: 4px; overflow-x: auto; }
+        button { 
+            background: #007bff; color: white; border: none; padding: 8px 16px; 
+            border-radius: 4px; cursor: pointer; margin: 4px;
+        }
+        button:hover { background: #0056b3; }
+        .test-section { margin: 20px 0; padding: 16px; border: 1px solid #ddd; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>🤖 Chrome AI API Availability Test</h1>
+    
+    <div class="test-section">
+        <h2>Environment Check</h2>
+        <div id="environmentStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>API Availability</h2>
+        <div id="apiStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Translation Test</h2>
+        <button onclick="testTranslation()">Test Translation</button>
+        <div id="translationResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Language Detection Test</h2>
+        <button onclick="testLanguageDetection()">Test Language Detection</button>
+        <div id="detectionResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Setup Instructions</h2>
+        <div id="setupInstructions"></div>
+    </div>
+
+    <script>
+        function addStatus(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            container.appendChild(div);
+        }
+
+        function checkEnvironment() {
+            const container = document.getElementById('environmentStatus');
+            
+            // Check secure context
+            if (isSecureContext) {
+                addStatus('environmentStatus', '✅ Secure context (HTTPS) - Required for Chrome AI', 'success');
+            } else {
+                addStatus('environmentStatus', '❌ Insecure context - Chrome AI requires HTTPS', 'error');
+            }
+
+            // Check Chrome version
+            const userAgent = navigator.userAgent;
+            const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
+            if (chromeMatch) {
+                const version = parseInt(chromeMatch[1]);
+                if (version >= 127) {
+                    addStatus('environmentStatus', `✅ Chrome ${version} - Supports Chrome AI`, 'success');
+                } else {
+                    addStatus('environmentStatus', `⚠️ Chrome ${version} - Chrome 127+ recommended for Chrome AI`, 'warning');
+                }
+            } else {
+                addStatus('environmentStatus', '❌ Not using Chrome - Chrome AI requires Chrome browser', 'error');
+            }
+        }
+
+        function checkAPIAvailability() {
+            const container = document.getElementById('apiStatus');
+            
+            // Check Translator API
+            if ('Translator' in self) {
+                addStatus('apiStatus', '✅ Translator API available', 'success');
+            } else {
+                addStatus('apiStatus', '❌ Translator API not available', 'error');
+            }
+
+            // Check Language Detector API
+            if ('LanguageDetector' in self) {
+                addStatus('apiStatus', '✅ LanguageDetector API available', 'success');
+            } else {
+                addStatus('apiStatus', '❌ LanguageDetector API not available', 'error');
+            }
+
+            // Overall status
+            const bothAvailable = ('Translator' in self) && ('LanguageDetector' in self);
+            if (bothAvailable) {
+                addStatus('apiStatus', '🎉 Chrome AI Translation features are fully available!', 'success');
+            } else {
+                addStatus('apiStatus', '⚠️ Chrome AI Translation features are not available', 'warning');
+            }
+        }
+
+        async function testTranslation() {
+            const container = document.getElementById('translationResult');
+            container.innerHTML = '';
+
+            if (!('Translator' in self)) {
+                addStatus('translationResult', 'Translator API not available', 'error');
+                return;
+            }
+
+            try {
+                addStatus('translationResult', 'Testing translation availability...', 'info');
+                
+                const availability = await self.Translator.availability({
+                    sourceLanguage: 'en',
+                    targetLanguage: 'es'
+                });
+
+                addStatus('translationResult', `Translation availability: ${availability}`, 'info');
+
+                if (availability === 'unavailable') {
+                    addStatus('translationResult', 'Translation not supported on this device', 'error');
+                    return;
+                }
+
+                addStatus('translationResult', 'Creating translator session...', 'info');
+                const translator = await self.Translator.create({
+                    sourceLanguage: 'en',
+                    targetLanguage: 'es'
+                });
+
+                addStatus('translationResult', 'Testing translation...', 'info');
+                const result = await translator.translate('Hello, world!');
+                
+                addStatus('translationResult', `✅ Translation successful: "Hello, world!" → "${result}"`, 'success');
+                
+                translator.destroy();
+            } catch (error) {
+                addStatus('translationResult', `❌ Translation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLanguageDetection() {
+            const container = document.getElementById('detectionResult');
+            container.innerHTML = '';
+
+            if (!('LanguageDetector' in self)) {
+                addStatus('detectionResult', 'LanguageDetector API not available', 'error');
+                return;
+            }
+
+            try {
+                addStatus('detectionResult', 'Creating language detector...', 'info');
+                const detector = await self.LanguageDetector.create();
+
+                addStatus('detectionResult', 'Testing language detection...', 'info');
+                const results = await detector.detect('Hola, ¿cómo estás?');
+                
+                if (results && results.length > 0) {
+                    const { detectedLanguage, confidence } = results[0];
+                    addStatus('detectionResult', `✅ Detection successful: "${detectedLanguage}" (${(confidence * 100).toFixed(1)}% confidence)`, 'success');
+                } else {
+                    addStatus('detectionResult', '⚠️ No language detected', 'warning');
+                }
+            } catch (error) {
+                addStatus('detectionResult', `❌ Language detection failed: ${error.message}`, 'error');
+            }
+        }
+
+        function showSetupInstructions() {
+            const container = document.getElementById('setupInstructions');
+            const bothAvailable = ('Translator' in self) && ('LanguageDetector' in self);
+            
+            if (bothAvailable) {
+                container.innerHTML = `
+                    <div class="status success">
+                        🎉 Chrome AI is properly configured! Your extension should work with all translation features.
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="status error">
+                        <strong>Chrome AI Setup Required</strong><br><br>
+                        To enable translation features:<br>
+                        1. <strong>Join Chrome AI Early Preview Program:</strong><br>
+                           <a href="https://docs.google.com/forms/d/e/1FAIpQLSfZXeiwj9KO9jMctffHPym88ln12xNWCrVkMY_u06WfSTulQg/viewform" target="_blank">Apply here</a><br><br>
+                        2. <strong>Enable Chrome Flags:</strong><br>
+                           Go to <code>chrome://flags/</code> and enable:<br>
+                           • <code>#optimization-guide-on-device-model</code><br>
+                           • <code>#prompt-api-for-gemini-nano</code><br><br>
+                        3. <strong>Get Origin Trial Token:</strong><br>
+                           <a href="https://developer.chrome.com/origintrials/" target="_blank">Register for Origin Trial</a><br>
+                           Add token to your extension's manifest.json<br><br>
+                        4. <strong>Restart Chrome</strong> after making changes<br><br>
+                        See <code>CHROME_AI_SETUP.md</code> for detailed instructions.
+                    </div>
+                `;
+            }
+        }
+
+        // Run tests on page load
+        window.addEventListener('load', () => {
+            checkEnvironment();
+            checkAPIAvailability();
+            showSetupInstructions();
+        });
+    </script>
+</body>
+</html>

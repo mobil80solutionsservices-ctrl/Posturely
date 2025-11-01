@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Hindi Translation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .pass { background-color: #d4edda; }
+        .fail { background-color: #f8d7da; }
+        pre {
+            background: #f7f7f7;
+            padding: 0.5rem;
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Complete Hindi Translation Coverage Test</h1>
+    <p>This page tests comprehensive Hindi translation coverage for all UI elements, analytics data labels, and achievement descriptions.</p>
+
+    <div id="status" class="status info">Ready to test Hindi translation coverage...</div>
+    
+    <button onclick="testCompleteHindiCoverage()">Test Complete Hindi Coverage</button>
+    <button onclick="testAnalyticsTranslation()">Test Analytics Translation</button>
+    <button onclick="testAchievementTranslation()">Test Achievement Translation</button>
+
+    <div id="results"></div>
+
+    <script type="module">
+        import { LocalizationService } from './src/LocalizationService.js';
+        import { ComprehensiveAchievementManager } from './src/ComprehensiveAchievementManager.js';
+
+        window.localizationService = new LocalizationService();
+        window.achievementManager = new ComprehensiveAchievementManager();
+        
+        // Initialize services
+        await window.localizationService.initialize();
+        window.achievementManager.setLocalizationService(window.localizationService);
+
+        window.testCompleteHindiCoverage = async function() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            
+            statusDiv.innerHTML = '<div class="info">Testing complete Hindi translation coverage...</div>';
+            resultsDiv.innerHTML = '';
+            
+            const results = [];
+            
+            try {
+                // Test 1: Basic UI Elements
+                results.push(await testUIElements());
+                
+                // Test 2: Analytics Data Labels
+                results.push(await testAnalyticsLabels());
+                
+                // Test 3: Achievement Descriptions
+                results.push(await testAchievementDescriptions());
+                
+                // Test 4: Empty States and Error Messages
+                results.push(await testEmptyStatesAndErrors());
+                
+                // Test 5: Dynamic Content Translation
+                results.push(await testDynamicContent());
+                
+                // Display results
+                displayResults(results);
+                
+                const passCount = results.filter(r => r.passed).length;
+                const totalCount = results.length;
+                
+                if (passCount === totalCount) {
+                    statusDiv.innerHTML = `<div class="success">✅ All ${totalCount} translation tests passed!</div>`;
+                } else {
+                    statusDiv.innerHTML = `<div class="warning">⚠️ ${passCount}/${totalCount} translation tests passed</div>`;
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">Test failed: ${error.message}</div>`;
+                resultsDiv.innerHTML = `<pre>Error details: ${error.stack}</pre>`;
+            }
+        };
+
+        async function testUIElements() {
+            const testName = 'UI Elements Translation';
+            const testResults = [];
+            
+            try {
+                // Test main interface elements
+                const uiElements = [
+                    'title',
+                    'start-tracking',
+                    'full-body-scan',
+                    'view-past-data',
+                    'settings-title',
+                    'language-modal-title'
+                ];
+                
+                for (const element of uiElements) {
+                    try {
+                        const translated = await window.localizationService.translateText(
+                            window.localizationService.translatableElements[element]?.text || element
+                        );
+                        testResults.push({
+                            element,
+                            original: window.localizationService.translatableElements[element]?.text || element,
+                            translated,
+                            success: translated !== (window.localizationService.translatableElements[element]?.text || element)
+                        });
+                    } catch (error) {
+                        testResults.push({
+                            element,
+                            error: error.message,
+                            success: false
+                        });
+                    }
+                }
+                
+                const successCount = testResults.filter(r => r.success).length;
+                return {
+                    name: testName,
+                    passed: successCount > 0,
+                    details: testResults,
+                    summary: `${successCount}/${testResults.length} UI elements translated`
+                };
+                
+            } catch (error) {
+                return {
+                    name: testName,
+                    passed: false,
+                    error: error.message
+                };
+            }
+        }
+
+        async function testAnalyticsLabels() {
+            const testName = 'Analytics Data Labels Translation';
+            const testResults = [];
+            
+            try {
+                // Test analytics-specific labels
+                const analyticsLabels = [
+                    'total-time',
+                    'total-sessions',
+                    'active-days',
+                    'avg-score',
+                    'date-label',
+                    'average-score-label',
+                    'sessions-label',
+                    'notes-label',
+                    'good-score',
+                    'fair-score',
+                    'poor-score'
+                ];
+                
+                for (const label of analyticsLabels) {
+                    try {
+                        const translated = await window.localizationService.getAnalyticsTranslation(label, 'hi');
+                        const original = window.localizationService.analyticsElements[label]?.text || label;
+                        
+                        testResults.push({
+                            label,
+                            original,
+                            translated,
+                            success: translated !== original && translated.length > 0
+                        });
+                    } catch (error) {
+                        testResults.push({
+                            label,
+                            error: error.message,
+                            success: false
+                        });
+                    }
+                }
+                
+                const successCount = testResults.filter(r => r.success).length;
+                return {
+                    name: testName,
+                    passed: successCount > 0,
+                    details: testResults,
+                    summary: `${successCount}/${testResults.length} analytics labels translated`
+                };
+                
+            } catch (error) {
+                return {
+                    name: testName,
+                    passed: false,
+                    error: error.message
+                };
+            }
+        }
+
+        async function testAchievementDescriptions() {
+            const testName = 'Achievement Descriptions Translation';
+            const testResults = [];
+            
+            try {
+                // Test achievement translations
+                const achievements = [
+                    'first-session',
+                    'early-bird',
+                    'night-owl',
+                    'streak-starter',
+                    'week-warrior',
+                    'month-master',
+                    'hour-hero',
+                    'posture-perfectionist'
+                ];
+                
+                for (const achievement of achievements) {
+                    try {
+                        const nameTranslated = await window.localizationService.getAchievementTranslation(achievement, 'name', 'hi');
+                        const descTranslated = await window.localizationService.getAchievementTranslation(achievement, 'description', 'hi');
+                        
+                        const originalName = window.localizationService.achievementTranslations[achievement]?.name || achievement;
+                        const originalDesc = window.localizationService.achievementTranslations[achievement]?.description || achievement;
+                        
+                        testResults.push({
+                            achievement,
+                            originalName,
+                            translatedName: nameTranslated,
+                            originalDesc,
+                            translatedDesc: descTranslated,
+                            success: (nameTranslated !== originalName || descTranslated !== originalDesc) && 
+                                    nameTranslated.length > 0 && descTranslated.length > 0
+                        });
+                    } catch (error) {
+                        testResults.push({
+                            achievement,
+                            error: error.message,
+                            success: false
+                        });
+                    }
+                }
+                
+                const successCount = testResults.filter(r => r.success).length;
+                return {
+                    name: testName,
+                    passed: successCount > 0,
+                    details: testResults,
+                    summary: `${successCount}/${testResults.length} achievements translated`
+                };
+                
+            } catch (error) {
+                return {
+                    name: testName,
+                    passed: false,
+                    error: error.message
+                };
+            }
+        }
+
+        async function testEmptyStatesAndErrors() {
+            const testName = 'Empty States and Error Messages Translation';
+            const testResults = [];
+            
+            try {
+                // Test empty states and error messages
+                const messages = [
+                    'loading',
+                    'error',
+                    'no-sessions',
+                    'no-tracking-sessions',
+                    'no-scans-yet',
+                    'failed-statistics',
+                    'calendar-error',
+                    'no-data'
+                ];
+                
+                for (const message of messages) {
+                    try {
+                        const translated = await window.localizationService.getAnalyticsTranslation(message, 'hi');
+                        const original = window.localizationService.analyticsElements[message]?.text || message;
+                        
+                        testResults.push({
+                            message,
+                            original,
+                            translated,
+                            success: translated !== original && translated.length > 0
+                        });
+                    } catch (error) {
+                        testResults.push({
+                            message,
+                            error: error.message,
+                            success: false
+                        });
+                    }
+                }
+                
+                const successCount = testResults.filter(r => r.success).length;
+                return {
+                    name: testName,
+                    passed: successCount > 0,
+                    details: testResults,
+                    summary: `${successCount}/${testResults.length} messages translated`
+                };
+                
+            } catch (error) {
+                return {
+                    name: testName,
+                    passed: false,
+                    error: error.message
+                };
+            }
+        }
+
+        async function testDynamicContent() {
+            const testName = 'Dynamic Content Translation';
+            const testResults = [];
+            
+            try {
+                // Test dynamic content translation
+                const dynamicTexts = [
+                    'Session 1',
+                    'Error loading session data',
+                    'Multi-view scan',
+                    'Analysis complete',
+                    'views captured',
+                    'recommendations'
+                ];
+                
+                for (const text of dynamicTexts) {
+                    try {
+                        const translated = await window.localizationService.translateText(text, 'hi');
+                        
+                        testResults.push({
+                            text,
+                            translated,
+                            success: translated !== text && translated.length > 0
+                        });
+                    } catch (error) {
+                        testResults.push({
+                            text,
+                            error: error.message,
+                            success: false
+                        });
+                    }
+                }
+                
+                const successCount = testResults.filter(r => r.success).length;
+                return {
+                    name: testName,
+                    passed: successCount > 0,
+                    details: testResults,
+                    summary: `${successCount}/${testResults.length} dynamic texts translated`
+                };
+                
+            } catch (error) {
+                return {
+                    name: testName,
+                    passed: false,
+                    error: error.message
+                };
+            }
+        }
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            
+            results.forEach(result => {
+                const section = document.createElement('div');
+                section.className = 'test-section';
+                
+                const header = document.createElement('h3');
+                header.textContent = `${result.name} - ${result.passed ? 'PASS' : 'FAIL'}`;
+                header.style.color = result.passed ? 'green' : 'red';
+                section.appendChild(header);
+                
+                if (result.summary) {
+                    const summary = document.createElement('p');
+                    summary.textContent = result.summary;
+                    section.appendChild(summary);
+                }
+                
+                if (result.error) {
+                    const error = document.createElement('div');
+                    error.className = 'test-result fail';
+                    error.textContent = `Error: ${result.error}`;
+                    section.appendChild(error);
+                }
+                
+                if (result.details) {
+                    const details = document.createElement('details');
+                    const summary = document.createElement('summary');
+                    summary.textContent = 'View Details';
+                    details.appendChild(summary);
+                    
+                    result.details.forEach(detail => {
+                        const item = document.createElement('div');
+                        item.className = `test-result ${detail.success ? 'pass' : 'fail'}`;
+                        
+                        if (detail.error) {
+                            item.textContent = `${detail.element || detail.label || detail.achievement || detail.message || detail.text}: Error - ${detail.error}`;
+                        } else {
+                            const content = [];
+                            if (detail.original) content.push(`Original: "${detail.original}"`);
+                            if (detail.translated) content.push(`Translated: "${detail.translated}"`);
+                            if (detail.originalName) content.push(`Name: "${detail.originalName}" → "${detail.translatedName}"`);
+                            if (detail.originalDesc) content.push(`Desc: "${detail.originalDesc}" → "${detail.translatedDesc}"`);
+                            
+                            item.textContent = `${detail.element || detail.label || detail.achievement || detail.message || detail.text}: ${content.join(', ')}`;
+                        }
+                        
+                        details.appendChild(item);
+                    });
+                    
+                    section.appendChild(details);
+                }
+                
+                resultsDiv.appendChild(section);
+            });
+        }
+
+        window.testAnalyticsTranslation = async function() {
+            const result = await testAnalyticsLabels();
+            displayResults([result]);
+        };
+
+        window.testAchievementTranslation = async function() {
+            const result = await testAchievementDescriptions();
+            displayResults([result]);
+        };
+    </script>
+</body>
+</html>

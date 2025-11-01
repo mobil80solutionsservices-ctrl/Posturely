@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Neck Rotation Exercise</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status.idle { background-color: #e3f2fd; color: #1976d2; }
+        .status.initialization { background-color: #fff3e0; color: #f57c00; }
+        .status.calibration { background-color: #f3e5f5; color: #7b1fa2; }
+        .status.left_turn { background-color: #e8f5e8; color: #388e3c; }
+        .status.right_turn { background-color: #fff8e1; color: #f9a825; }
+        .status.completed { background-color: #e8f5e8; color: #2e7d32; }
+        .status.error { background-color: #ffebee; color: #d32f2f; }
+        
+        .controls {
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .btn:hover {
+            background-color: #1976d2;
+        }
+        
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .exercise-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .pose-info {
+            background-color: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        
+        .log {
+            background-color: #263238;
+            color: #00e676;
+            padding: 15px;
+            border-radius: 5px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Neck Rotation Exercise Test</h1>
+        
+        <div class="status idle" id="status">
+            Status: Idle
+        </div>
+        
+        <div class="exercise-info">
+            <h3>Exercise Information</h3>
+            <p><strong>Current Rep:</strong> <span id="currentRep">0</span> / <span id="maxReps">7</span></p>
+            <p><strong>Current Phase:</strong> <span id="currentPhase">None</span></p>
+            <p><strong>In Correct Pose:</strong> <span id="inCorrectPose">No</span></p>
+            <p><strong>Hold Timer:</strong> <span id="holdTimer">Inactive</span></p>
+        </div>
+        
+        <div class="pose-info">
+            <h4>Simulated Pose Data</h4>
+            <p><strong>Nose Position:</strong> <span id="nosePos">x: 0.5, y: 0.3</span></p>
+            <p><strong>Left Shoulder:</strong> <span id="leftShoulder">x: 0.4, y: 0.5</span></p>
+            <p><strong>Right Shoulder:</strong> <span id="rightShoulder">x: 0.6, y: 0.5</span></p>
+            <p><strong>Distances:</strong> Left: <span id="leftDist">0.000</span>, Right: <span id="rightDist">0.000</span></p>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="startBtn" onclick="startExercise()">Start Exercise</button>
+            <button class="btn" id="pauseBtn" onclick="pauseExercise()" disabled>Pause</button>
+            <button class="btn" id="resumeBtn" onclick="resumeExercise()" disabled>Resume</button>
+            <button class="btn" id="stopBtn" onclick="stopExercise()" disabled>Stop</button>
+        </div>
+        
+        <div class="controls">
+            <h4>Simulate Poses:</h4>
+            <button class="btn" onclick="simulateLeftTurn()">Simulate Left Turn</button>
+            <button class="btn" onclick="simulateRightTurn()">Simulate Right Turn</button>
+            <button class="btn" onclick="simulateNeutralPose()">Simulate Neutral Pose</button>
+        </div>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <script type="module">
+        import { ExerciseOrchestrator } from './src/ExerciseOrchestrator.js';
+        
+        let exerciseOrchestrator = null;
+        let currentController = null;
+        let updateInterval = null;
+        
+        // Simulated pose data
+        let simulatedPose = {
+            landmarks: new Array(33).fill(null).map((_, index) => ({
+                x: 0.5 + (Math.random() - 0.5) * 0.05,
+                y: 0.5 + (Math.random() - 0.5) * 0.05,
+                z: 0,
+                visibility: 0.9
+            })),
+            timestamp: Date.now()
+        };
+        
+        // Set specific landmarks
+        simulatedPose.landmarks[0] = { x: 0.5, y: 0.3, z: 0, visibility: 0.95 }; // nose
+        simulatedPose.landmarks[11] = { x: 0.4, y: 0.5, z: 0, visibility: 0.9 }; // left shoulder
+        simulatedPose.landmarks[12] = { x: 0.6, y: 0.5, z: 0, visibility: 0.9 }; // right shoulder
+        
+        // Initialize
+        async function init() {
+            try {
+                log('🔄 Initializing Exercise System...');
+                
+                exerciseOrchestrator = new ExerciseOrchestrator();
+                await exerciseOrchestrator.initialize();
+                
+                // Start pose simulation
+                startPoseSimulation();
+                
+                // Start UI updates
+                startUIUpdates();
+                
+                log('✅ Exercise system initialized successfully');
+                
+            } catch (error) {
+                log(`❌ Initialization failed: ${error.message}`);
+            }
+        }
+        
+        function startPoseSimulation() {
+            // Update pose data periodically
+            setInterval(() => {
+                if (exerciseOrchestrator && exerciseOrchestrator.poseValidator) {
+                    exerciseOrchestrator.poseValidator.updateCurrentPose(simulatedPose);
+                    updatePoseDisplay();
+                }
+            }, 100);
+        }
+        
+        function startUIUpdates() {
+            updateInterval = setInterval(() => {
+                updateExerciseInfo();
+            }, 500);
+        }
+        
+        function updatePoseDisplay() {
+            const nose = simulatedPose.landmarks[0];
+            const leftShoulder = simulatedPose.landmarks[11];
+            const rightShoulder = simulatedPose.landmarks[12];
+            
+            document.getElementById('nosePos').textContent = `x: ${nose.x.toFixed(3)}, y: ${nose.y.toFixed(3)}`;
+            document.getElementById('leftShoulder').textContent = `x: ${leftShoulder.x.toFixed(3)}, y: ${leftShoulder.y.toFixed(3)}`;
+            document.getElementById('rightShoulder').textContent = `x: ${rightShoulder.x.toFixed(3)}, y: ${rightShoulder.y.toFixed(3)}`;
+            
+            // Calculate distances
+            const leftDist = Math.sqrt(Math.pow(nose.x - leftShoulder.x, 2) + Math.pow(nose.y - leftShoulder.y, 2));
+            const rightDist = Math.sqrt(Math.pow(nose.x - rightShoulder.x, 2) + Math.pow(nose.y - rightShoulder.y, 2));
+            
+            document.getElementById('leftDist').textContent = leftDist.toFixed(3);
+            document.getElementById('rightDist').textContent = rightDist.toFixed(3);
+        }
+        
+        function updateExerciseInfo() {
+            if (currentController) {
+                const state = currentController.getState();
+                
+                // Update status
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = `Status: ${state.state}`;
+                statusEl.className = `status ${state.state}`;
+                
+                // Update exercise info
+                document.getElementById('currentRep').textContent = state.currentRep || 0;
+                document.getElementById('maxReps').textContent = state.maxReps || 7;
+                document.getElementById('currentPhase').textContent = state.currentPhase || 'None';
+                document.getElementById('inCorrectPose').textContent = state.isInCorrectPose ? 'Yes' : 'No';
+                document.getElementById('holdTimer').textContent = currentController.holdTimer ? 'Active' : 'Inactive';
+            }
+        }
+        
+        // Exercise controls
+        window.startExercise = async function() {
+            try {
+                log('🚀 Starting Neck Rotation exercise...');
+                
+                currentController = exerciseOrchestrator.createExerciseController('neck-rotation');
+                await exerciseOrchestrator.startExercise('neck-rotation');
+                
+                // Update button states
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = false;
+                
+                log('✅ Exercise started successfully');
+                
+            } catch (error) {
+                log(`❌ Failed to start exercise: ${error.message}`);
+            }
+        };
+        
+        window.pauseExercise = async function() {
+            try {
+                log('⏸️ Pausing exercise...');
+                await exerciseOrchestrator.pauseExercise();
+                
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('resumeBtn').disabled = false;
+                
+                log('✅ Exercise paused');
+            } catch (error) {
+                log(`❌ Failed to pause exercise: ${error.message}`);
+            }
+        };
+        
+        window.resumeExercise = async function() {
+            try {
+                log('▶️ Resuming exercise...');
+                await exerciseOrchestrator.resumeExercise();
+                
+                document.getElementById('pauseBtn').disabled = false;
+                document.getElementById('resumeBtn').disabled = true;
+                
+                log('✅ Exercise resumed');
+            } catch (error) {
+                log(`❌ Failed to resume exercise: ${error.message}`);
+            }
+        };
+        
+        window.stopExercise = async function() {
+            try {
+                log('⏹️ Stopping exercise...');
+                await exerciseOrchestrator.stopExercise();
+                
+                // Reset button states
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('resumeBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = true;
+                
+                currentController = null;
+                
+                log('✅ Exercise stopped');
+            } catch (error) {
+                log(`❌ Failed to stop exercise: ${error.message}`);
+            }
+        };
+        
+        // Pose simulation functions
+        window.simulateLeftTurn = function() {
+            log('👈 Simulating left turn pose...');
+            // Move nose closer to left shoulder, farther from right
+            simulatedPose.landmarks[0].x = 0.35; // nose moves left
+            simulatedPose.landmarks[0].y = 0.32;
+            log('✅ Left turn pose simulated');
+        };
+        
+        window.simulateRightTurn = function() {
+            log('👉 Simulating right turn pose...');
+            // Move nose closer to right shoulder, farther from left
+            simulatedPose.landmarks[0].x = 0.65; // nose moves right
+            simulatedPose.landmarks[0].y = 0.32;
+            log('✅ Right turn pose simulated');
+        };
+        
+        window.simulateNeutralPose = function() {
+            log('😐 Simulating neutral pose...');
+            // Reset nose to center position
+            simulatedPose.landmarks[0].x = 0.5;
+            simulatedPose.landmarks[0].y = 0.3;
+            log('✅ Neutral pose simulated');
+        };
+        
+        // Logging function
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.innerHTML += `[${timestamp}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(message);
+        }
+        
+        // Event listeners for exercise events
+        document.addEventListener('neckRotationStateChange', (event) => {
+            const { oldState, newState, currentRep, currentPhase } = event.detail;
+            log(`🔄 State Change: ${oldState} → ${newState} (Rep: ${currentRep}, Phase: ${currentPhase})`);
+        });
+        
+        document.addEventListener('exerciseCompleted', (event) => {
+            const { exerciseType, results, message } = event.detail;
+            log(`🎉 Exercise Completed: ${exerciseType}`);
+            log(`📊 Results: ${JSON.stringify(results, null, 2)}`);
+            
+            // Reset button states
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('resumeBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            
+            currentController = null;
+        });
+        
+        // Initialize when page loads
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hindi API Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+        pre {
+            background: #f7f7f7;
+            padding: 0.5rem;
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hindi API Fix Test</h1>
+    <p>This page tests the improved API handling for Hindi translation.</p>
+
+    <div id="status" class="status info">Ready to test...</div>
+    <button onclick="testHindiDirect()">Test Hindi Direct API</button>
+    <button onclick="testHindiWithManager()">Test Hindi with Manager</button>
+
+    <pre id="output" style="display: none;"></pre>
+
+    <script type="module">
+        import { EnhancedLanguageManager } from './src/EnhancedLanguageManager.js';
+
+        window.manager = new EnhancedLanguageManager();
+        
+        window.testHindiDirect = async function() {
+            const statusDiv = document.getElementById('status');
+            const outputDiv = document.getElementById('output');
+            
+            statusDiv.innerHTML = '<div class="info">Testing Hindi translation directly...</div>';
+            outputDiv.style.display = 'none';
+            
+            try {
+                if (typeof Translator === 'undefined') {
+                    statusDiv.innerHTML = '<div class="error">Translator API not available</div>';
+                    return;
+                }
+                
+                // Check availability
+                const availability = await Translator.availability({
+                    sourceLanguage: 'en',
+                    targetLanguage: 'hi'
+                });
+                
+                let output = `Hindi availability: ${availability}\n`;
+                
+                if (availability === 'unavailable') {
+                    statusDiv.innerHTML = '<div class="error">Hindi is not available on this device</div>';
+                    return;
+                }
+                
+                // Create translator
+                const translator = await Translator.create({
+                    sourceLanguage: 'en',
+                    targetLanguage: 'hi'
+                });
+                
+                output += 'Translator created successfully\n';
+                
+                // Test both API formats
+                let result1, result2;
+                
+                try {
+                    result1 = await translator.translate('Hello');
+                    output += `Direct string API: ${JSON.stringify(result1)}\n`;
+                } catch (error) {
+                    output += `Direct string API failed: ${error.message}\n`;
+                }
+                
+                try {
+                    result2 = await translator.translate({ text: 'Hello' });
+                    output += `Object API: ${JSON.stringify(result2)}\n`;
+                } catch (error) {
+                    output += `Object API failed: ${error.message}\n`;
+                }
+                
+                // Determine which format worked
+                let translatedText = null;
+                if (typeof result1 === 'string' && result1.trim()) {
+                    translatedText = result1;
+                    output += `✅ Direct string API worked: "${result1}"\n`;
+                } else if (result2 && result2.output && typeof result2.output === 'string') {
+                    translatedText = result2.output;
+                    output += `✅ Object API worked: "${result2.output}"\n`;
+                }
+                
+                if (translatedText) {
+                    statusDiv.innerHTML = '<div class="success">✅ Hindi translation working!</div>';
+                } else {
+                    statusDiv.innerHTML = '<div class="error">❌ Neither API format worked</div>';
+                }
+                
+                outputDiv.innerHTML = output;
+                outputDiv.style.display = 'block';
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">Test failed: ${error.message}</div>`;
+                outputDiv.innerHTML = `Error details: ${error.stack}`;
+                outputDiv.style.display = 'block';
+            }
+        };
+
+        window.testHindiWithManager = async function() {
+            const statusDiv = document.getElementById('status');
+            const outputDiv = document.getElementById('output');
+            
+            statusDiv.innerHTML = '<div class="info">Testing Hindi with LanguageModelManager...</div>';
+            outputDiv.style.display = 'none';
+            
+            try {
+                await window.manager.initialize();
+                
+                let output = 'Manager initialized\n';
+                
+                // Check availability
+                const availability = await window.manager.checkRealAvailability('hi');
+                output += `Manager reports Hindi availability: ${availability}\n`;
+                
+                if (availability === 'unavailable') {
+                    statusDiv.innerHTML = '<div class="error">Manager says Hindi is unavailable</div>';
+                    outputDiv.innerHTML = output;
+                    outputDiv.style.display = 'block';
+                    return;
+                }
+                
+                // Try to download
+                await window.manager.downloadLanguageModel('hi', (progress) => {
+                    statusDiv.innerHTML = `<div class="info">Downloading Hindi: ${progress}%</div>`;
+                });
+                
+                output += 'Hindi download completed successfully!\n';
+                statusDiv.innerHTML = '<div class="success">✅ Hindi download successful with manager!</div>';
+                
+                outputDiv.innerHTML = output;
+                outputDiv.style.display = 'block';
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">Manager test failed: ${error.message}</div>`;
+                outputDiv.innerHTML = `Manager error: ${error.message}\n${error.stack}`;
+                outputDiv.style.display = 'block';
+            }
+        };
+    </script>
+</body>
+</html>

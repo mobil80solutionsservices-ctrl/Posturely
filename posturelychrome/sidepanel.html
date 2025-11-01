@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        :root {
+            --bg: #FFFFFF;
+            --text: #2B1E0F;
+            --subtext: #5B4A37;
+            --accent: #FED867;
+            --border: rgba(122, 75, 0, 0.18);
+            --score-surface: rgba(0,0,0,0.04);
+            --buttonPrimaryBG1: #FFD045;
+            --buttonPrimaryBG2: #F9B52D;
+            --buttonPrimaryText: #2B1E0F;
+            --secondaryBG: #FFF3C9;
+        }
+        body {
+            width: 100%;
+            height: 100vh;
+            padding: 0;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 360px;
+            margin: 0 auto;
+            padding: 16px 14px 22px 14px;
+        }
+        .card { background: transparent; border: none; border-radius: 0; box-shadow: none; overflow: visible; }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 16px 10px 16px;
+        }
+        
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-icon {
+            width: 44px; height: 44px; border-radius: 16px; background: #FFEDB3;
+            display: flex; align-items: center; justify-content: center; font-size: 26px;
+            border: 1px solid var(--border);
+        }
+        .title { font-size: 28px; font-weight: 800; color: var(--text); margin: 0; }
+        .menu { font-size: 24px; color: var(--text); opacity: 0.8; }
+        #languageToggle, #settingsToggle { padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--secondaryBG); color: var(--text); cursor: pointer; }
+        
+        /* Language Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal.hidden { display: none; }
+        .modal-content {
+            background: var(--bg);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text);
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--subtext);
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            justify-content: flex-end;
+        }
+
+        .modal-footer .button {
+            margin: 0;
+            min-width: 80px;
+        }
+        .language-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .language-header {
+            padding: 12px 16px;
+            background: var(--secondaryBG);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .language-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .stats-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .api-warning {
+            font-size: 12px;
+            color: #FFA000;
+            font-weight: 500;
+        }
+        .language-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .language-item:hover {
+            background: var(--secondaryBG);
+            transform: translateY(-1px);
+        }
+        .language-item.selected {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+            border-color: var(--accent);
+        }
+        .language-item.language-error {
+            border-color: #EF4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .language-item.language-downloading {
+            border-color: #007AFF;
+            background: rgba(0, 122, 255, 0.1);
+        }
+        .language-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .language-flag {
+            font-size: 20px;
+        }
+        .language-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .language-status-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .language-status {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .retry-btn {
+            background: #EF4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .retry-btn:hover {
+            background: #DC2626;
+        }
+        .download-spinner {
+            font-size: 14px;
+            color: #007AFF;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .download-progress {
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--secondaryBG);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: var(--text);
+        }
+        .progress-language-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .progress-language-flag {
+            font-size: 16px;
+        }
+        .progress-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .progress-spinner {
+            font-size: 12px;
+            animation: spin 1s linear infinite;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--buttonPrimaryBG2));
+            transition: width 0.3s ease;
+            width: 0%;
+            border-radius: 4px;
+        }
+        .progress-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--subtext);
+        }
+        .progress-speed {
+            font-style: italic;
+        }
+        .progress-cancel {
+            background: #EF4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .progress-cancel:hover {
+            background: #DC2626;
+        }
+        
+        .content { padding: 10px 16px 18px 16px; }
+        
+        .button {
+            width: 100%;
+            padding: 16px;
+            margin: 12px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .button-primary { background: linear-gradient(180deg, var(--buttonPrimaryBG1), var(--buttonPrimaryBG2)); color: var(--buttonPrimaryText); border: 1px solid var(--border); font-weight: 800; border-radius: 18px; }
+        
+        .button-primary:hover { filter: brightness(0.98); transform: translateY(-1px); }
+        
+        .button-secondary { background: var(--secondaryBG); color: var(--text); border: 1px solid var(--border); }
+        
+        .button-secondary:hover {
+            background: #FED867;
+            transform: translateY(-1px);
+        }
+        
+        .hero { margin: 12px 0 8px 0; background: var(--accent); border-radius: 16px; height: 170px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
+        .hero-emoji { font-size: 80px; }
+        .status { text-align: left; padding: 0; border-radius: 12px; margin: 6px 0 2px 0; font-size: 28px; font-weight: 900; color: var(--text); }
+        
+        .status-active {
+            background: #34C759;
+            color: white;
+        }
+        
+        .status-inactive {
+            background: transparent;
+            color: #666;
+        }
+        
+        .status-scanning {
+            background: #007AFF;
+            color: white;
+        }
+        
+        .subtext { font-size: 16px; color: var(--subtext); line-height: 1.5; }
+        
+        /* Origin Trial Status Styles */
+        .origin-trial-status {
+            margin: 12px 0;
+            padding: 12px;
+            background: #FFF3CD;
+            border: 1px solid #FFEAA7;
+            border-radius: 8px;
+            color: #856404;
+        }
+
+        .origin-trial-message {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .origin-trial-icon {
+            font-size: 16px;
+        }
+        .origin-trial-details {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .origin-trial-details p {
+            margin: 8px 0 4px 0;
+            font-weight: 500;
+        }
+        .origin-trial-details ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        .origin-trial-details li {
+            margin: 4px 0;
+        }
+        .origin-trial-details a {
+            color: #0066CC;
+            text-decoration: none;
+        }
+
+        .origin-trial-details .button {
+            margin: 8px 4px 0 0;
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+        
+        .instructions h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            color: #7A4B00;
+        }
+        
+        .instructions ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 6px 0;
+        }
+        
+        .score-display {
+            background: var(--score-surface);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin: 16px 0;
+            border: 1px solid var(--border);
+        }
+        
+        .score-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+        
+        .score-good { color: #34C759; }
+        .score-fair { color: #FFA000; }
+        .score-poor { color: #EF4444; }
+        
+        .score-label {
+            font-size: 14px;
+            color: #6B7280;
+            margin-bottom: 8px;
+        }
+        
+        .score-status {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* Timer Display Styles */
+        .timer-display {
+            text-align: center;
+            margin: 16px 0;
+            padding: 12px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .timer-label {
+            font-size: 12px;
+            color: var(--subtext);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .timer-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+        }
+        
+        .controls {
+            margin-top: 20px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+
+        /* Removed weekly strip styles - no longer needed */
+
+
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--text);
+            margin: 18px 0 8px 0;
+        }
+        .section-text {
+            font-size: 18px;
+            line-height: 1.5;
+            color: var(--text);
+        }
+        .motivation-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .motivation-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            font-size: 16px;
+        }
+        
+        .scan-preview {
+            width: 100%;
+            max-width: 220px;
+            height: 160px;
+            background: #000;
+            border-radius: 12px;
+            margin: 16px auto;
+            display: block;
+            object-fit: cover;
+        }
+        
+        .video-container {
+            width: 100%;
+            max-width: 280px;
+            height: 210px;
+            background: #000;
+            border-radius: 12px;
+            margin: 16px auto;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .countdown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .countdown-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .countdown-content h2 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            color: #FFD700;
+        }
+        
+        .countdown-number {
+            font-size: 72px;
+            font-weight: bold;
+            color: #FFD700;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .countdown-content p {
+            margin: 20px 0 0 0;
+            font-size: 16px;
+            color: #FFFFFF;
+        }
+        
+        .scan-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .scan-controls .button {
+            flex: 1;
+            margin: 0;
+        }
+
+        /* Mood logging styles */
+        .mood-section {
+            margin: 20px 0;
+            padding: 16px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .mood-header {
+            margin-bottom: 12px;
+        }
+
+        .mood-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .mood-subtitle {
+            font-size: 14px;
+            color: var(--subtext);
+        }
+
+        .mood-input-container {
+            position: relative;
+        }
+
+        .mood-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .mood-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .mood-input::placeholder {
+            color: var(--subtext);
+            opacity: 0.7;
+        }
+
+        .mood-char-count {
+            position: absolute;
+            right: 8px;
+            bottom: -20px;
+            font-size: 12px;
+            color: var(--subtext);
+        }
+
+        .mood-char-count.warning {
+            color: #FFA000;
+        }
+
+        .mood-char-count.error {
+            color: #EF4444;
+        }
+
+        /* Recent mood display styles */
+        .recent-mood-block {
+            margin: 16px 0;
+        }
+
+        .recent-mood-content {
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            color: var(--text);
+            font-style: italic;
+        }
+
+        .recent-mood-content .mood-icon {
+            margin-right: 6px;
+        }
+
+        .recent-mood-content .mood-time {
+            font-size: 12px;
+            color: var(--subtext);
+            margin-top: 4px;
+        }
+
+        /* Settings Modal Styles */
+        .settings-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .setting-item {
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--secondaryBG);
+        }
+
+        .setting-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .setting-label {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .setting-value {
+            font-weight: 600;
+            color: var(--accent);
+            font-size: 14px;
+        }
+
+        .setting-toggle {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .setting-slider {
+            width: 100%;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+
+        .setting-select {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .setting-description {
+            font-size: 12px;
+            color: var(--subtext);
+            line-height: 1.4;
+        }
+
+        .break-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .stat-row span:last-child {
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        /* Goal tracking and badge system styles */
+        .goals-section {
+            margin: 20px 0;
+            padding: 16px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .goals-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .goals-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .goals-settings-btn {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .goal-progress {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .goal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .goal-label {
+            font-size: 14px;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .goal-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #000000; /* Black color for goal values */
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #D97706; /* Dark orange color */
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+
+        .streak-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .streak-icon {
+            font-size: 20px;
+        }
+
+        .streak-info {
+            flex: 1;
+        }
+
+        .streak-number {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .streak-label {
+            font-size: 12px;
+            color: var(--subtext);
+        }
+
+        /* Badge system styles */
+        .badges-section {
+            margin: 20px 0;
+        }
+
+        .badges-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .badges-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .badges-count {
+            font-size: 12px;
+            color: var(--subtext);
+        }
+
+        .recent-badges {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 8px 0;
+        }
+
+        .badge-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 60px;
+            padding: 8px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .badge-item.earned {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+        }
+
+        .badge-item.locked {
+            opacity: 0.5;
+        }
+
+        .badge-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .badge-name {
+            font-size: 10px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        /* Compact Achievement System Styles */
+        .achievements-compact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .achievements-summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .achievements-count {
+            font-size: 12px;
+            color: var(--subtext);
+            font-weight: 600;
+        }
+
+        .view-details-btn {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .view-details-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .achievements-scroll-container {
+            overflow-x: auto;
+            padding: 4px 0 8px 0;
+            margin-bottom: 8px;
+        }
+
+        .achievements-scroll-container::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .achievements-scroll-container::-webkit-scrollbar-track {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .achievements-scroll-container::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .achievements-compact-grid {
+            display: flex;
+            gap: 8px;
+            padding: 4px 0;
+            min-width: max-content;
+        }
+
+        .achievement-compact-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 70px;
+            max-width: 70px;
+            padding: 8px 6px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .achievement-compact-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .achievement-compact-item.earned {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+            border-color: var(--accent);
+        }
+
+        .achievement-compact-item.in-progress {
+            border-color: #007AFF;
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .achievement-compact-item.locked {
+            opacity: 0.6;
+        }
+
+        .achievement-compact-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+
+        .achievement-compact-name {
+            font-size: 9px;
+            font-weight: 600;
+            line-height: 1.2;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .achievement-compact-item.earned .achievement-compact-name {
+            color: var(--buttonPrimaryText);
+        }
+
+        .achievement-compact-progress {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #007AFF;
+            color: white;
+            font-size: 8px;
+            font-weight: 600;
+            padding: 1px 3px;
+            border-radius: 6px;
+            line-height: 1;
+        }
+
+        .achievements-details-container {
+            margin-top: 12px;
+        }
+
+        .achievements-details-container.hidden {
+            display: none;
+        }
+
+        /* Comprehensive Achievement System Styles */
+        .achievements-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .achievements-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .achievement-category {
+            margin-bottom: 20px;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: var(--secondaryBG);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .category-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .category-progress {
+            font-size: 12px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .achievement-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .achievement-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .achievement-item.earned {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+            border-color: var(--accent);
+        }
+
+        .achievement-item.in-progress {
+            border-color: #007AFF;
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .achievement-item.locked {
+            opacity: 0.6;
+        }
+
+        .achievement-icon {
+            font-size: 28px;
+            min-width: 32px;
+            text-align: center;
+        }
+
+        .achievement-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .achievement-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .achievement-item.earned .achievement-name {
+            color: var(--buttonPrimaryText);
+        }
+
+        .achievement-description {
+            font-size: 12px;
+            color: var(--subtext);
+            line-height: 1.3;
+            margin-bottom: 6px;
+        }
+
+        .achievement-item.earned .achievement-description {
+            color: var(--buttonPrimaryText);
+            opacity: 0.9;
+        }
+
+        .achievement-progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .achievement-progress-fill {
+            height: 100%;
+            background: #007AFF;
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .achievement-progress-text {
+            font-size: 10px;
+            color: var(--subtext);
+            font-weight: 600;
+        }
+
+        .achievement-earned-date {
+            font-size: 10px;
+            color: var(--buttonPrimaryText);
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        /* Notification styles */
+        .goal-celebration,
+        .badge-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        }
+
+        .goal-celebration.show,
+        .badge-notification.show {
+            transform: translateX(0);
+        }
+
+        .celebration-content,
+        .badge-notification-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .celebration-icon,
+        .badge-icon-large {
+            font-size: 32px;
+        }
+
+        .celebration-message {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .badge-info {
+            flex: 1;
+        }
+
+        .badge-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 2px;
+        }
+
+        .badge-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .badge-description {
+            font-size: 12px;
+            color: var(--subtext);
+            line-height: 1.3;
+        }
+
+        /* Button styles */
+        .button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            font-family: inherit;
+        }
+
+        .button-primary {
+            background: linear-gradient(135deg, var(--buttonPrimaryBG1), var(--buttonPrimaryBG2));
+            color: var(--buttonPrimaryText);
+            border: 1px solid var(--border);
+        }
+
+        .button-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .button-secondary {
+            background: var(--secondaryBG);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .button-secondary:hover {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+        }
+
+        .button-tertiary {
+            background: transparent;
+            color: var(--subtext);
+            border: 1px solid var(--border);
+            font-size: 12px;
+            padding: 6px 12px;
+            opacity: 0.7;
+        }
+
+        .button-tertiary:hover {
+            opacity: 1;
+            background: var(--border);
+        }
+
+        .origin-trial-actions {
+            display: flex;
+            gap: 8px;
+            margin: 12px 0 8px 0;
+            flex-wrap: wrap;
+        }
+
+        .origin-trial-note {
+            font-size: 12px;
+            color: var(--subtext);
+            margin: 8px 0 0 0;
+            font-style: italic;
+        }
+
+        .ai-test-results {
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .test-header {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .test-content {
+            font-size: 12px;
+            line-height: 1.4;
+            color: var(--text);
+        }
+
+        .test-item {
+            margin: 6px 0;
+            padding: 6px 8px;
+            border-radius: 4px;
+            background: var(--secondaryBG);
+        }
+
+        .test-success {
+            border-left: 3px solid #34C759;
+        }
+
+        .test-error {
+            border-left: 3px solid #EF4444;
+        }
+
+        .test-warning {
+            border-left: 3px solid #FFA000;
+        }
+
+        .test-summary {
+            margin-top: 8px;
+            padding: 8px;
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+            border-radius: 4px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="brand">
+                    <div class="brand-icon">🦒</div>
+                    <div class="title">Posturely</div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button id="languageToggle">🌐</button>
+                    <button id="settingsToggle">⚙️</button>
+                    <button id="debugTranslation" style="font-size:12px; padding:4px 8px;" title="Test Translation">🔧</button>
+                    <div class="menu">⋮</div>
+                </div>
+            </div>
+            <div class="content">
+                <div id="hero" class="hero"><div class="hero-emoji">🦒</div></div>
+                <div id="inactiveBlock">
+                    <div id="status" class="status">No active tracking</div>
+                    <div class="subtext">Start a session to monitor your posture.</div>
+                </div>
+                
+                <!-- Origin Trial Status Display -->
+                <div id="originTrialStatus" class="origin-trial-status hidden">
+                    <div class="origin-trial-message">
+                        <span class="origin-trial-icon">⚠️</span>
+                        <span id="originTrialText">Checking Chrome AI features...</span>
+                    </div>
+                    <div id="originTrialDetails" class="origin-trial-details hidden">
+                        <p><strong>Optional:</strong> Enable AI-powered features for enhanced summaries and motivational messages:</p>
+                        <ol>
+                            <li>Join the <a href="#" id="originTrialLink" target="_blank">Chrome Built-in AI Early Preview Program</a></li>
+                            <li>Enable Chrome flags in chrome://flags/</li>
+                            <li>Configure Origin Trial tokens</li>
+                        </ol>
+                        <div class="origin-trial-actions">
+                            <button id="setupGuideBtn" class="button button-secondary">📖 Setup Guide</button>
+                            <button id="recheckAIBtn" class="button button-secondary">🔄 Recheck</button>
+                            <button id="testAIBtn" class="button button-secondary">🧪 Test AI</button>
+                            <button id="dismissAISetupBtn" class="button button-tertiary">✕ Don't show again</button>
+                        </div>
+                        <p class="origin-trial-note">Note: All core posture tracking features work without AI setup.</p>
+                        
+                        <!-- AI Test Results -->
+                        <div id="aiTestResults" class="ai-test-results hidden">
+                            <div class="test-header">
+                                <strong>🧪 AI Test Results</strong>
+                            </div>
+                            <div id="aiTestContent" class="test-content">
+                                <!-- Test results will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="scoreDisplay" class="score-display hidden">
+                    <div class="score-label">Current Posture Score</div>
+                    <div id="scoreValue" class="score-value score-poor">--</div>
+                    <div id="scoreStatus" class="score-status">Calibrating...</div>
+                </div>
+
+                <!-- Tracking Timer Display -->
+                <div id="timerDisplay" class="timer-display hidden">
+                    <div class="timer-label">Session Time</div>
+                    <div id="timerValue" class="timer-value">00:00</div>
+                </div>
+                
+                <div class="controls">
+                    <button id="startTracking" class="button button-primary">Start tracking</button>
+                    <button id="startScan" class="button button-secondary">📷 Full Body Scan</button>
+                    <button id="guidedExercisesBtn" class="button button-secondary">🧘‍♀️ Do Guided Exercises</button>
+                    <button id="stopTracking" class="button button-secondary hidden">⏹️ Stop Tracking</button>
+                </div>
+
+                <!-- Mood Modal - shown when starting tracking -->
+                <div id="moodModal" class="modal hidden">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>How are you feeling?</h3>
+                        </div>
+                        <div class="modal-body">
+                            <p style="color: var(--subtext); margin-bottom: 16px;">Optional mood note for this session</p>
+                            <div class="mood-input-container">
+                                <input type="text" id="moodInput" class="mood-input" placeholder="e.g., focused, tired, energetic..." maxlength="100">
+                                <div class="mood-char-count">
+                                    <span id="moodCharCount">0</span>/100
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="skipMoodBtn" class="button button-secondary">Skip</button>
+                            <button id="startWithMoodBtn" class="button button-primary">Start Tracking</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View Past Data Button - replaces weekly calendar strip -->
+                <button id="viewPastDataBtn" class="button button-secondary" style="margin: 16px 0;">
+                    📊 View Past Data
+                </button>
+
+
+
+                <div id="summaryBlock" class="hidden">
+                    <div class="section-title">Summary</div>
+                    <div class="section-text">Generating AI summary...</div>
+                </div>
+
+                <div id="motivationBlock" class="hidden">
+                    <div class="section-title">Motivation</div>
+                    <div class="motivation-row">
+                        <div class="motivation-icon">🖤</div>
+                        <div class="section-text">Generating AI motivation...</div>
+                    </div>
+                </div>
+
+                <!-- Recent mood display -->
+                <div id="recentMoodBlock" class="recent-mood-block hidden">
+                    <div class="section-title">Recent Mood</div>
+                    <div id="recentMoodContent" class="recent-mood-content">
+                        <!-- Mood content will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Goal tracking section -->
+                <div id="goalsSection" class="goals-section hidden">
+                    <div class="goals-header">
+                        <div class="goals-title">Daily Goals</div>
+                        <button id="goalsSettingsBtn" class="goals-settings-btn">⚙️ Settings</button>
+                    </div>
+                    <div id="goalProgress" class="goal-progress">
+                        <!-- Goal progress will be populated by JavaScript -->
+                    </div>
+                    <div id="streakDisplay" class="streak-display">
+                        <div class="streak-icon">🔥</div>
+                        <div class="streak-info">
+                            <div id="streakNumber" class="streak-number">0 days</div>
+                            <div class="streak-label">Current streak</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Badge system section -->
+                <div id="badgesSection" class="badges-section hidden">
+                    <div class="badges-header">
+                        <div class="badges-title">Achievements</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div id="badgesCount" class="badges-count">0/0 earned</div>
+                            <button id="viewAchievementsBtn" class="view-details-btn">View All</button>
+                        </div>
+                    </div>
+                    <div id="recentBadges" class="recent-badges">
+                        <!-- Recent badges will be populated by JavaScript -->
+                    </div>
+                </div>
+
+
+
+        <div id="videoSection" class="hidden">
+            <div class="video-container">
+                <video id="cameraVideo" autoplay playsinline></video>
+                <canvas id="poseCanvas"></canvas>
+            </div>
+            <div id="countdownOverlay" class="countdown-overlay hidden">
+                <div class="countdown-content">
+                    <h2>Get Ready!</h2>
+                    <div id="countdownValue" class="countdown-number">3</div>
+                    <p>Sit straight and look at the camera</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="scanSection" class="hidden">
+            <h3>Enhanced Full Body Scan</h3>
+            <div class="video-container">
+                <video id="scanVideo" autoplay playsinline></video>
+                <canvas id="scanCanvas"></canvas>
+                <div id="scanCountdownOverlay" class="countdown-overlay hidden">
+                    <div class="countdown-content">
+                        <h2>Get Ready for Scan!</h2>
+                        <div id="scanCountdownValue" class="countdown-number">3</div>
+                        <p>Position yourself for front view capture</p>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                <input type="checkbox" id="autoCaptureToggle" />
+                <label for="autoCaptureToggle">Auto-capture when full body is detected</label>
+                <span id="autoCaptureStatus" style="font-size: 12px; color: #6B7280;"></span>
+            </div>
+            <div class="scan-controls">
+                <button id="captureScan" class="button button-primary">
+                    📸 Capture
+                </button>
+                <button id="cancelScan" class="button button-secondary">
+                    ? Cancel
+                </button>
+            </div>
+        </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Language Selection Modal -->
+    <div id="languageModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Select Language</h3>
+                <button id="closeLanguageModal" class="close-button">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="languageList" class="language-list">
+                    <!-- Languages will be populated by JavaScript -->
+                </div>
+                <div id="downloadProgress" class="download-progress hidden">
+                    <div class="progress-info">
+                        <div class="progress-language-info">
+                            <span id="downloadLanguageFlag" class="progress-language-flag">🌐</span>
+                            <span id="downloadLanguageName">Downloading...</span>
+                        </div>
+                        <div class="progress-status">
+                            <span id="downloadPercentage">0%</span>
+                            <span id="progressSpinner" class="progress-spinner">?</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-details">
+                        <span id="progressSize">Preparing download...</span>
+                        <span id="progressSpeed" class="progress-speed"></span>
+                    </div>
+                    <button id="progressCancel" class="progress-cancel hidden">Cancel Download</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Break Reminder Settings</h3>
+                <button id="closeSettingsModal" class="close-button">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <div class="setting-header">
+                            <label class="setting-label">Enable Break Reminders</label>
+                            <input type="checkbox" id="breakRemindersEnabled" class="setting-toggle">
+                        </div>
+                        <div class="setting-description">Get smart notifications to take breaks based on your posture patterns</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-header">
+                            <label class="setting-label">Reminder Frequency</label>
+                            <span id="frequencyValue" class="setting-value">30 min</span>
+                        </div>
+                        <input type="range" id="reminderFrequency" class="setting-slider" min="5" max="120" step="5" value="30">
+                        <div class="setting-description">How often to remind you to take breaks (5-120 minutes)</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-header">
+                            <label class="setting-label">Posture Threshold</label>
+                            <span id="thresholdValue" class="setting-value">80</span>
+                        </div>
+                        <input type="range" id="postureThreshold" class="setting-slider" min="50" max="95" step="5" value="80">
+                        <div class="setting-description">Trigger reminders when posture score drops below this value</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-header">
+                            <label class="setting-label">Audio Alerts</label>
+                            <input type="checkbox" id="audioAlertsEnabled" class="setting-toggle">
+                        </div>
+                        <div class="setting-description">Play audio alerts when posture drops below threshold during tracking</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-header">
+                            <label class="setting-label">Alert Volume</label>
+                            <span id="alertVolumeValue" class="setting-value">30%</span>
+                        </div>
+                        <input type="range" id="alertVolume" class="setting-slider" min="0" max="100" step="10" value="30">
+                        <div class="setting-description">Volume level for audio alerts (0-100%)</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-header">
+                            <label class="setting-label">Alert Type</label>
+                            <select id="alertType" class="setting-select">
+                                <option value="gentle">Gentle Chime</option>
+                                <option value="standard">Standard Beep</option>
+                                <option value="urgent">Urgent Alert</option>
+                            </select>
+                        </div>
+                        <div class="setting-description">Choose the type of audio alert sound</div>
+                        <button id="testAudioAlert" class="button button-tertiary" style="margin-top: 8px;">🔊 Test Alert</button>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-header">
+                            <label class="setting-label">Break Reminder Stats</label>
+                        </div>
+                        <div id="breakStats" class="break-stats">
+                            <div class="stat-row">
+                                <span>Total Reminders:</span>
+                                <span id="totalReminders">0</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Breaks Taken:</span>
+                                <span id="acceptedBreaks">0</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Acceptance Rate:</span>
+                                <span id="acceptanceRate">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Goals Settings Modal -->
+    <div id="goalsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Goal Settings</h3>
+                <button id="closeGoalsModal" class="close-button">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <div class="setting-header">
+                            <label class="setting-label">Daily Minutes Goal</label>
+                            <span id="dailyMinutesValue" class="setting-value">60 min</span>
+                        </div>
+                        <input type="range" id="dailyMinutesSlider" class="setting-slider" min="15" max="480" step="15" value="60">
+                        <div class="setting-description">Target minutes to track posture each day (15 minutes to 8 hours)</div>
+                    </div>
+                    
+
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="src/NavigationManager.js"></script>
+    <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

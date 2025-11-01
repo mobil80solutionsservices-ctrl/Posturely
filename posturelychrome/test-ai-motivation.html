@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test AI Motivation & Summary</title>
+    <!-- Chrome AI Origin Trial Token -->
+    <meta http-equiv="origin-trial" content="Aiqz8ZArzAhQ2U24U9mLLJV8l16YNGsuiDqHJcUD3eCqYDbrWpb8qG3BSMXJ4OxDyS6Zw9HlsS5/ZoD0AFDAUQEAAABWeyJvcmlnaW4iOiJodHRwczovL2Nocm9tZS5kZXY6NDQzIiwiZmVhdHVyZSI6IkFJU3VtbWFyaXphdGlvbkFQSSIsImV4cGlyeSI6MTc1MzE0MjQwMH0=" />
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .summary-block, .motivation-block {
+            background: linear-gradient(135deg, #FFD045 0%, #F9B52D 100%);
+            color: #2B1E0F;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 0;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .section-text {
+            font-size: 16px;
+            line-height: 1.4;
+        }
+        button {
+            background: #FFD045;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+        }
+        button:hover {
+            background: #F9B52D;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .test-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .debug-info {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .session-info {
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .api-status {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .api-item {
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .api-available {
+            background: #d4edda;
+            color: #155724;
+        }
+        .api-unavailable {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Motivation & Summary Test</h1>
+        
+        <div id="status"></div>
+        
+        <div class="api-status">
+            <div id="summarizerStatus" class="api-item api-unavailable">
+                Summarizer API: Checking...
+            </div>
+            <div id="writerStatus" class="api-item api-unavailable">
+                Writer API: Checking...
+            </div>
+        </div>
+        
+        <div class="test-controls">
+            <button onclick="initializeManager()">Initialize Manager</button>
+            <button onclick="startSession()" id="startBtn" disabled>Start Session</button>
+            <button onclick="stopSession()" id="stopBtn" disabled>Stop Session</button>
+            <button onclick="forceUpdate()" id="updateBtn" disabled>Force Update</button>
+            <button onclick="testFallbacks()">Test Fallbacks</button>
+        </div>
+        
+        <div class="session-info" id="sessionInfo">
+            <strong>Session Status:</strong> Not started
+        </div>
+        
+        <!-- Summary Block (matches sidepanel structure) -->
+        <div id="summaryBlock" class="summary-block" style="display: none;">
+            <div class="section-title">Summary</div>
+            <div class="section-text">Waiting for AI summary...</div>
+        </div>
+        
+        <!-- Motivation Block (matches sidepanel structure) -->
+        <div id="motivationBlock" class="motivation-block" style="display: none;">
+            <div class="section-title">Motivation</div>
+            <div class="motivation-row">
+                <div class="motivation-icon">🖤</div>
+                <div class="section-text">Waiting for AI motivation...</div>
+            </div>
+        </div>
+        
+        <div class="debug-info" id="debugInfo">
+            Click "Initialize Manager" to start testing...
+        </div>
+    </div>
+
+    <script type="module">
+        import { AIMotivationManager } from './src/AIMotivationManager.js';
+        
+        let aiManager;
+        let sessionActive = false;
+        
+        // Check API availability
+        async function checkAPIAvailability() {
+            const summarizerStatus = document.getElementById('summarizerStatus');
+            const writerStatus = document.getElementById('writerStatus');
+            
+            // Check Summarizer API
+            if (typeof window.Summarizer !== 'undefined') {
+                try {
+                    const availability = await window.Summarizer.availability();
+                    if (availability !== 'unavailable') {
+                        summarizerStatus.textContent = `Summarizer API: ${availability}`;
+                        summarizerStatus.className = 'api-item api-available';
+                    } else {
+                        summarizerStatus.textContent = 'Summarizer API: Unavailable';
+                    }
+                } catch (error) {
+                    summarizerStatus.textContent = 'Summarizer API: Error';
+                }
+            } else {
+                summarizerStatus.textContent = 'Summarizer API: Not Found';
+            }
+            
+            // Check Writer API (Language Model)
+            if (typeof window.LanguageModel !== 'undefined') {
+                try {
+                    const availability = await window.LanguageModel.availability();
+                    if (availability !== 'unavailable') {
+                        writerStatus.textContent = `Writer API: ${availability}`;
+                        writerStatus.className = 'api-item api-available';
+                    } else {
+                        writerStatus.textContent = 'Writer API: Unavailable';
+                    }
+                } catch (error) {
+                    writerStatus.textContent = 'Writer API: Error';
+                }
+            } else {
+                writerStatus.textContent = 'Writer API: Not Found';
+            }
+        }
+        
+        // Initialize AI Manager
+        window.initializeManager = async function() {
+            try {
+                const status = document.getElementById('status');
+                status.innerHTML = '<div class="status warning">Initializing AI Motivation Manager...</div>';
+                
+                aiManager = new AIMotivationManager();
+                const initialized = await aiManager.initialize();
+                
+                if (initialized) {
+                    status.innerHTML = '<div class="status success">✅ AI Motivation Manager initialized successfully!</div>';
+                    document.getElementById('startBtn').disabled = false;
+                } else {
+                    status.innerHTML = '<div class="status warning">⚠️ AI Motivation Manager using fallback mode</div>';
+                    document.getElementById('startBtn').disabled = false;
+                }
+                
+                updateDebugInfo();
+                
+            } catch (error) {
+                const status = document.getElementById('status');
+                status.innerHTML = `<div class="status error">❌ Failed to initialize: ${error.message}</div>`;
+                console.error('Initialization error:', error);
+            }
+        };
+        
+        // Start session
+        window.startSession = function() {
+            if (!aiManager) {
+                alert('Please initialize the manager first');
+                return;
+            }
+            
+            aiManager.startSession();
+            sessionActive = true;
+            
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('updateBtn').disabled = false;
+            
+            // Show summary and motivation blocks
+            document.getElementById('summaryBlock').style.display = 'block';
+            document.getElementById('motivationBlock').style.display = 'block';
+            
+            updateSessionInfo();
+            updateDebugInfo();
+        };
+        
+        // Stop session
+        window.stopSession = function() {
+            if (!aiManager) return;
+            
+            aiManager.stopSession();
+            sessionActive = false;
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('updateBtn').disabled = true;
+            
+            updateSessionInfo();
+            updateDebugInfo();
+        };
+        
+        // Force update
+        window.forceUpdate = async function() {
+            if (!aiManager || !sessionActive) return;
+            
+            try {
+                await aiManager.updateSummaryAndMotivation();
+                updateDebugInfo();
+            } catch (error) {
+                console.error('Force update error:', error);
+            }
+        };
+        
+        // Test fallbacks
+        window.testFallbacks = function() {
+            // Simulate fallback mode
+            const summaryElement = document.querySelector('#summaryBlock .section-text');
+            const motivationElement = document.querySelector('#motivationBlock .section-text');
+            
+            if (summaryElement) {
+                summaryElement.textContent = "You've started your posture tracking session. Stay mindful of your sitting position.";
+            }
+            
+            if (motivationElement) {
+                motivationElement.textContent = "🌟 Keep up the great work! Every minute of good posture counts.";
+            }
+            
+            // Show blocks
+            document.getElementById('summaryBlock').style.display = 'block';
+            document.getElementById('motivationBlock').style.display = 'block';
+        };
+        
+        // Update session info
+        function updateSessionInfo() {
+            const sessionInfo = document.getElementById('sessionInfo');
+            if (aiManager) {
+                const status = aiManager.getStatus();
+                sessionInfo.innerHTML = `
+                    <strong>Session Status:</strong> ${status.sessionActive ? 'Active' : 'Inactive'}<br>
+                    <strong>Duration:</strong> ${status.sessionDuration} minutes<br>
+                    <strong>AI Available:</strong> ${aiManager.isAIAvailable() ? 'Yes' : 'No (Fallback mode)'}
+                `;
+            }
+        }
+        
+        // Update debug info
+        function updateDebugInfo() {
+            const debugInfo = document.getElementById('debugInfo');
+            
+            if (!aiManager) {
+                debugInfo.innerHTML = 'AI Manager not initialized';
+                return;
+            }
+            
+            const status = aiManager.getStatus();
+            debugInfo.innerHTML = `
+                <strong>Manager Status:</strong><br>
+                - Initialized: ${status.initialized}<br>
+                - Summarizer Available: ${status.summarizerAvailable}<br>
+                - Writer Available: ${status.writerAvailable}<br>
+                - Session Active: ${status.sessionActive}<br>
+                - Session Duration: ${status.sessionDuration} minutes<br>
+                - AI Mode: ${aiManager.isAIAvailable() ? 'AI-powered' : 'Fallback'}<br>
+                <br>
+                <strong>Environment:</strong><br>
+                - Secure Context: ${isSecureContext}<br>
+                - Summarizer API: ${typeof window.Summarizer !== 'undefined'}<br>
+                - LanguageModel API: ${typeof window.LanguageModel !== 'undefined'}
+            `;
+        }
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAPIAvailability();
+            updateDebugInfo();
+        });
+        
+        // Auto-update session info every 30 seconds
+        setInterval(() => {
+            if (sessionActive) {
+                updateSessionInfo();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

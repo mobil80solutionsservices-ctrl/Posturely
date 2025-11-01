@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Simple Analytics Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .calendar-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-button {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .nav-button:hover {
+            background: #e0e0e0;
+        }
+        .calendar-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin: 0;
+        }
+        .debug-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Simple Analytics Navigation Test</h1>
+    
+    <div class="calendar-controls">
+        <div class="calendar-nav">
+            <button id="prevMonth" class="nav-button">◀</button>
+            <button id="nextMonth" class="nav-button">▶</button>
+        </div>
+        <h3 id="calendarTitle" class="calendar-title">January 2025</h3>
+        <div class="calendar-actions">
+            <button id="todayBtn" class="nav-button">Today</button>
+        </div>
+    </div>
+    
+    <div class="debug-info">
+        <h3>Debug Information</h3>
+        <div id="debugOutput"></div>
+    </div>
+
+    <script>
+        // Simple calendar navigation without module dependencies
+        let calendarCursor = new Date();
+        
+        function log(message, type = 'info') {
+            const output = document.getElementById('debugOutput');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `${new Date().toLocaleTimeString()}: ${message}`;
+            output.appendChild(div);
+            console.log(message);
+        }
+        
+        function updateCalendarTitle() {
+            const calendarTitle = document.getElementById('calendarTitle');
+            if (calendarTitle) {
+                calendarTitle.textContent = calendarCursor.toLocaleDateString(undefined, {
+                    month: 'long',
+                    year: 'numeric'
+                });
+                log(`Calendar updated to: ${calendarTitle.textContent}`, 'success');
+            } else {
+                log('Calendar title element not found!', 'error');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            log('DOM Content Loaded', 'success');
+            
+            // Get DOM elements
+            const prevMonthBtn = document.getElementById('prevMonth');
+            const nextMonthBtn = document.getElementById('nextMonth');
+            const todayBtn = document.getElementById('todayBtn');
+            
+            // Check if elements exist
+            log(`prevMonth button: ${prevMonthBtn ? 'Found' : 'Missing'}`, prevMonthBtn ? 'success' : 'error');
+            log(`nextMonth button: ${nextMonthBtn ? 'Found' : 'Missing'}`, nextMonthBtn ? 'success' : 'error');
+            log(`today button: ${todayBtn ? 'Found' : 'Missing'}`, todayBtn ? 'success' : 'error');
+            
+            // Add event listeners
+            if (prevMonthBtn) {
+                prevMonthBtn.addEventListener('click', () => {
+                    log('Previous month button clicked!', 'success');
+                    calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1);
+                    updateCalendarTitle();
+                });
+                log('Previous month event listener added', 'success');
+            }
+            
+            if (nextMonthBtn) {
+                nextMonthBtn.addEventListener('click', () => {
+                    log('Next month button clicked!', 'success');
+                    calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1);
+                    updateCalendarTitle();
+                });
+                log('Next month event listener added', 'success');
+            }
+            
+            if (todayBtn) {
+                todayBtn.addEventListener('click', () => {
+                    log('Today button clicked!', 'success');
+                    calendarCursor = new Date();
+                    updateCalendarTitle();
+                });
+                log('Today event listener added', 'success');
+            }
+            
+            // Initialize display
+            updateCalendarTitle();
+            log('Initialization complete', 'success');
+        });
+    </script>
+</body>
+</html>

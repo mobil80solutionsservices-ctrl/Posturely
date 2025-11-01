@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Posture Alerts</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+        button { margin: 5px; padding: 10px 15px; }
+        .status { margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Posture Alert System Test</h1>
+    
+    <div class="test-section">
+        <h2>Audio Alert Service Test</h2>
+        <button id="testGentleAlert">Test Gentle Alert</button>
+        <button id="testStandardAlert">Test Standard Alert</button>
+        <button id="testUrgentAlert">Test Urgent Alert</button>
+        <button id="testSuccessSound">Test Success Sound</button>
+        <div id="audioStatus" class="status">Audio Service Status: Loading...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Posture Threshold Monitor Test</h2>
+        <label>Threshold: <input type="range" id="thresholdSlider" min="50" max="95" value="80"> <span id="thresholdDisplay">80</span></label><br>
+        <label>Audio Enabled: <input type="checkbox" id="audioEnabled" checked></label><br>
+        <button id="simulateLowScore">Simulate Low Score (60)</button>
+        <button id="simulateGoodScore">Simulate Good Score (90)</button>
+        <button id="startMonitoring">Start Monitoring</button>
+        <button id="stopMonitoring">Stop Monitoring</button>
+        <div id="monitorStatus" class="status">Monitor Status: Loading...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Alert Statistics</h2>
+        <button id="getStats">Get Alert Stats</button>
+        <button id="resetStats">Reset Stats</button>
+        <div id="statsDisplay" class="status">Click "Get Alert Stats" to view statistics</div>
+    </div>
+
+    <script type="module">
+        import { AudioAlertService } from './src/AudioAlertService.js';
+        import { PostureThresholdMonitor } from './src/PostureThresholdMonitor.js';
+
+        // Initialize services
+        const audioService = new AudioAlertService();
+        const monitor = new PostureThresholdMonitor(audioService);
+
+        // DOM elements
+        const thresholdSlider = document.getElementById('thresholdSlider');
+        const thresholdDisplay = document.getElementById('thresholdDisplay');
+        const audioEnabled = document.getElementById('audioEnabled');
+        const audioStatus = document.getElementById('audioStatus');
+        const monitorStatus = document.getElementById('monitorStatus');
+        const statsDisplay = document.getElementById('statsDisplay');
+
+        // Update displays
+        function updateDisplays() {
+            const audioStat = audioService.getStatus();
+            const monitorStat = monitor.getStatus();
+            
+            audioStatus.textContent = `Audio Service - Enabled: ${audioStat.isEnabled}, Volume: ${Math.round(audioStat.volume * 100)}%, Type: ${audioStat.type}`;
+            monitorStatus.textContent = `Monitor - Enabled: ${monitorStat.isEnabled}, Monitoring: ${monitorStat.isMonitoring}, Threshold: ${monitorStat.threshold}`;
+        }
+
+        // Audio alert tests
+        document.getElementById('testGentleAlert').addEventListener('click', async () => {
+            await audioService.setAlertType('gentle');
+            audioService.testAlert();
+        });
+
+        document.getElementById('testStandardAlert').addEventListener('click', async () => {
+            await audioService.setAlertType('standard');
+            audioService.testAlert();
+        });
+
+        document.getElementById('testUrgentAlert').addEventListener('click', async () => {
+            await audioService.setAlertType('urgent');
+            audioService.testAlert();
+        });
+
+        document.getElementById('testSuccessSound').addEventListener('click', () => {
+            audioService.playSuccessSound();
+        });
+
+        // Threshold controls
+        thresholdSlider.addEventListener('input', async (e) => {
+            const value = parseInt(e.target.value);
+            thresholdDisplay.textContent = value;
+            await monitor.setThreshold(value);
+            updateDisplays();
+        });
+
+        audioEnabled.addEventListener('change', async (e) => {
+            await monitor.setAudioEnabled(e.target.checked);
+            await audioService.setEnabled(e.target.checked);
+            updateDisplays();
+        });
+
+        // Monitoring controls
+        document.getElementById('startMonitoring').addEventListener('click', () => {
+            monitor.startMonitoring();
+            updateDisplays();
+        });
+
+        document.getElementById('stopMonitoring').addEventListener('click', () => {
+            monitor.stopMonitoring();
+            updateDisplays();
+        });
+
+        // Score simulation
+        document.getElementById('simulateLowScore').addEventListener('click', () => {
+            // Simulate multiple low scores to trigger alert
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => monitor.monitorPostureScore(60), i * 100);
+            }
+        });
+
+        document.getElementById('simulateGoodScore').addEventListener('click', () => {
+            monitor.monitorPostureScore(90);
+            updateDisplays();
+        });
+
+        // Statistics
+        document.getElementById('getStats').addEventListener('click', async () => {
+            const stats = await monitor.getAlertStats();
+            statsDisplay.innerHTML = `
+                <strong>Alert Statistics:</strong><br>
+                Total Alerts: ${stats.totalAlerts}<br>
+                Alerts Today: ${stats.alertsToday}<br>
+                Average Score: ${stats.averageScore}<br>
+                Current Threshold: ${stats.currentThreshold}<br>
+                Enabled: ${stats.isEnabled}
+            `;
+        });
+
+        document.getElementById('resetStats').addEventListener('click', () => {
+            monitor.resetStats();
+            statsDisplay.textContent = 'Statistics reset';
+        });
+
+        // Initialize displays
+        setTimeout(updateDisplays, 100);
+    </script>
+</body>
+</html>

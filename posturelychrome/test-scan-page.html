@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Scan Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #0056CC;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background: #f0f0f0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Scan Page Infrastructure Test</h1>
+        <p>This page tests the dedicated scan page infrastructure implementation.</p>
+        
+        <h2>Test Cases</h2>
+        
+        <button class="test-button" onclick="testScanPageNavigation()">
+            Test Scan Page Navigation
+        </button>
+        
+        <button class="test-button" onclick="testScanPageController()">
+            Test ScanPageController Class
+        </button>
+        
+        <button class="test-button" onclick="testPostureAnalyzer()">
+            Test EnhancedPostureAnalyzer
+        </button>
+        
+        <button class="test-button" onclick="testAIReportGenerator()">
+            Test AIReportGenerator
+        </button>
+        
+        <div id="testResults"></div>
+    </div>
+
+    <script>
+        function addResult(message, isSuccess = true) {
+            const resultsDiv = document.getElementById('testResults');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+            resultDiv.textContent = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function testScanPageNavigation() {
+            try {
+                // Test if scan.html exists and is accessible
+                const scanUrl = chrome.runtime.getURL('scan.html');
+                addResult(`✅ Scan page URL generated: ${scanUrl}`);
+                
+                // Test opening scan page
+                window.open(scanUrl, '_blank');
+                addResult('✅ Scan page navigation test passed');
+            } catch (error) {
+                addResult(`❌ Scan page navigation test failed: ${error.message}`, false);
+            }
+        }
+
+        async function testScanPageController() {
+            try {
+                // Test if ScanPageController module can be imported
+                const module = await import('./src/ScanPageController.js');
+                addResult('✅ ScanPageController module imported successfully');
+                
+                // Test if class exists
+                if (module.ScanPageController) {
+                    addResult('✅ ScanPageController class found');
+                } else {
+                    addResult('❌ ScanPageController class not found', false);
+                }
+            } catch (error) {
+                addResult(`❌ ScanPageController test failed: ${error.message}`, false);
+            }
+        }
+
+        async function testPostureAnalyzer() {
+            try {
+                // Test if EnhancedPostureAnalyzer module can be imported
+                const module = await import('./src/EnhancedPostureAnalyzer.js');
+                addResult('✅ EnhancedPostureAnalyzer module imported successfully');
+                
+                // Test if class exists and can be instantiated
+                if (module.EnhancedPostureAnalyzer) {
+                    const analyzer = new module.EnhancedPostureAnalyzer();
+                    addResult('✅ EnhancedPostureAnalyzer instantiated successfully');
+                    
+                    // Test analysis with mock data
+                    const mockPose = {
+                        keypoints: [
+                            { part: 'nose', position: { x: 320, y: 100 }, score: 0.9 },
+                            { part: 'leftShoulder', position: { x: 280, y: 150 }, score: 0.8 },
+                            { part: 'rightShoulder', position: { x: 360, y: 150 }, score: 0.8 }
+                        ]
+                    };
+                    
+                    const metrics = analyzer.analyzePosture(mockPose);
+                    if (metrics && typeof metrics.postureScore === 'number') {
+                        addResult(`✅ Posture analysis test passed - Score: ${metrics.postureScore}`);
+                    } else {
+                        addResult('❌ Posture analysis returned invalid results', false);
+                    }
+                } else {
+                    addResult('❌ EnhancedPostureAnalyzer class not found', false);
+                }
+            } catch (error) {
+                addResult(`❌ EnhancedPostureAnalyzer test failed: ${error.message}`, false);
+            }
+        }
+
+        async function testAIReportGenerator() {
+            try {
+                // Test if AIReportGenerator module can be imported
+                const module = await import('./src/AIReportGenerator.js');
+                addResult('✅ AIReportGenerator module imported successfully');
+                
+                // Test if class exists and can be instantiated
+                if (module.AIReportGenerator) {
+                    const generator = new module.AIReportGenerator();
+                    addResult('✅ AIReportGenerator instantiated successfully');
+                    
+                    // Test initialization
+                    const initialized = await generator.initialize();
+                    addResult(`✅ AIReportGenerator initialization: ${initialized ? 'AI available' : 'Fallback mode'}`);
+                    
+                    // Test report generation with mock data
+                    const mockMetrics = {
+                        neckTilt: 12.5,
+                        shoulderTilt: 3.2,
+                        spineAngle: 8.1,
+                        slouchCount: 25.0,
+                        postureScore: 78
+                    };
+                    
+                    const report = await generator.generateReport(mockMetrics);
+                    if (report && typeof report === 'string' && report.length > 0) {
+                        addResult('✅ Report generation test passed');
+                    } else {
+                        addResult('❌ Report generation returned invalid results', false);
+                    }
+                } else {
+                    addResult('❌ AIReportGenerator class not found', false);
+                }
+            } catch (error) {
+                addResult(`❌ AIReportGenerator test failed: ${error.message}`, false);
+            }
+        }
+
+        // Auto-run basic tests on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            addResult('🎯 Scan Page Infrastructure Test Suite Started');
+            addResult('📁 Testing file structure and module imports...');
+        });
+    </script>
+</body>
+</html>

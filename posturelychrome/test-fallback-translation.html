@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Fallback Translation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-element {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .language-modal-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Fallback Translation</h1>
+    <p>This page tests the fallback translation system when Chrome's API doesn't work.</p>
+
+    <div class="status" id="status">Ready to test...</div>
+
+    <div class="test-element">
+        <h3 id="languageModal" class="language-modal-title">Select Language</h3>
+        <button id="startTracking">Start tracking</button>
+        <button id="stopTracking">Stop Tracking</button>
+        <button id="settings">Settings</button>
+        <button id="cancel">Cancel</button>
+        <button id="save">Save</button>
+    </div>
+
+    <button onclick="testHindiFallback()">Test Hindi Fallback</button>
+    <button onclick="testSpanishFallback()">Test Spanish Fallback</button>
+    <button onclick="testFrenchFallback()">Test French Fallback</button>
+    <button onclick="resetToEnglish()">Reset to English</button>
+
+    <script type="module">
+        import { LocalizationService } from './src/LocalizationService.js';
+
+        const service = new LocalizationService();
+        await service.initialize();
+
+        // Store original texts
+        const originalTexts = {
+            'languageModal': document.getElementById('languageModal').textContent,
+            'startTracking': document.getElementById('startTracking').textContent,
+            'stopTracking': document.getElementById('stopTracking').textContent,
+            'settings': document.getElementById('settings').textContent,
+            'cancel': document.getElementById('cancel').textContent,
+            'save': document.getElementById('save').textContent
+        };
+
+        window.testHindiFallback = async function() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = 'Testing Hindi fallback translations...';
+            
+            try {
+                // Test fallback translations directly
+                const tests = [
+                    { id: 'languageModal', text: 'Select Language' },
+                    { id: 'startTracking', text: 'Start tracking' },
+                    { id: 'stopTracking', text: 'Stop Tracking' },
+                    { id: 'settings', text: 'Settings' },
+                    { id: 'cancel', text: 'Cancel' },
+                    { id: 'save', text: 'Save' }
+                ];
+
+                for (const test of tests) {
+                    const element = document.getElementById(test.id);
+                    const fallbackText = service.getFallbackTranslation(test.text, 'hi');
+                    element.textContent = fallbackText;
+                }
+
+                statusDiv.textContent = '✅ Hindi fallback translations applied!';
+            } catch (error) {
+                statusDiv.textContent = `❌ Error: ${error.message}`;
+            }
+        };
+
+        window.testSpanishFallback = async function() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = 'Testing Spanish fallback translations...';
+            
+            try {
+                const tests = [
+                    { id: 'languageModal', text: 'Select Language' },
+                    { id: 'startTracking', text: 'Start tracking' },
+                    { id: 'stopTracking', text: 'Stop Tracking' },
+                    { id: 'settings', text: 'Settings' },
+                    { id: 'cancel', text: 'Cancel' },
+                    { id: 'save', text: 'Save' }
+                ];
+
+                for (const test of tests) {
+                    const element = document.getElementById(test.id);
+                    const fallbackText = service.getFallbackTranslation(test.text, 'es');
+                    element.textContent = fallbackText;
+                }
+
+                statusDiv.textContent = '✅ Spanish fallback translations applied!';
+            } catch (error) {
+                statusDiv.textContent = `❌ Error: ${error.message}`;
+            }
+        };
+
+        window.testFrenchFallback = async function() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = 'Testing French fallback translations...';
+            
+            try {
+                const tests = [
+                    { id: 'languageModal', text: 'Select Language' },
+                    { id: 'startTracking', text: 'Start tracking' },
+                    { id: 'stopTracking', text: 'Stop Tracking' },
+                    { id: 'settings', text: 'Settings' },
+                    { id: 'cancel', text: 'Cancel' },
+                    { id: 'save', text: 'Save' }
+                ];
+
+                for (const test of tests) {
+                    const element = document.getElementById(test.id);
+                    const fallbackText = service.getFallbackTranslation(test.text, 'fr');
+                    element.textContent = fallbackText;
+                }
+
+                statusDiv.textContent = '✅ French fallback translations applied!';
+            } catch (error) {
+                statusDiv.textContent = `❌ Error: ${error.message}`;
+            }
+        };
+
+        window.resetToEnglish = function() {
+            for (const [id, text] of Object.entries(originalTexts)) {
+                document.getElementById(id).textContent = text;
+            }
+            document.getElementById('status').textContent = 'Reset to English';
+        };
+
+        // Make service available globally for testing
+        window.localizationService = service;
+    </script>
+</body>
+</html>

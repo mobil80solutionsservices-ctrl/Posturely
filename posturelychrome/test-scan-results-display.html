@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Scan Results Display</title>
+    <style>
+        :root {
+            --bg: #FFFFFF;
+            --text: #2B1E0F;
+            --subtext: #5B4A37;
+            --accent: #FED867;
+            --border: rgba(122, 75, 0, 0.18);
+            --score-surface: rgba(0,0,0,0.04);
+            --buttonPrimaryBG1: #FFD045;
+            --buttonPrimaryBG2: #F9B52D;
+            --buttonPrimaryText: #2B1E0F;
+            --secondaryBG: #FFF3C9;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .button {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            margin: 8px;
+        }
+        
+        .button-primary {
+            background: linear-gradient(180deg, var(--buttonPrimaryBG1), var(--buttonPrimaryBG2));
+            color: var(--buttonPrimaryText);
+            border: 1px solid var(--border);
+        }
+        
+        .button-secondary {
+            background: var(--secondaryBG);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        .score-good {
+            background: #34C759;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        
+        .score-fair {
+            background: #FFA000;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        
+        .score-poor {
+            background: #EF4444;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        
+        .scan-results {
+            margin-top: 20px;
+            padding: 20px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        
+        .results-content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Scan Results Display</h1>
+        <p>This page tests the scan results display functionality and scan history saving.</p>
+        
+        <button id="testScanResults" class="button button-primary">
+            📊 Test Scan Results Display
+        </button>
+        
+        <button id="testScanHistory" class="button button-secondary">
+            📈 Test Scan History
+        </button>
+        
+        <button id="clearScanHistory" class="button button-secondary">
+            🗑️ Clear Scan History
+        </button>
+        
+        <div id="scanResults" class="scan-results" style="display: none;">
+            <h2>📊 Scan Results</h2>
+            <div id="resultsContent" class="results-content">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+        
+        <div id="scanHistoryDisplay" class="scan-results" style="display: none;">
+            <h2>📈 Scan History</h2>
+            <div id="historyContent" class="results-content">
+                <!-- History will be displayed here -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Mock scan results data
+        const mockScanResults = {
+            combinedMetrics: {
+                postureScore: 78,
+                frontViewScore: 82,
+                sideViewScore: 74,
+                neckTilt: -12.5,
+                shoulderTilt: 3.2,
+                hipTilt: -1.8,
+                forwardHeadPosture: 8.3,
+                overallAlignment: 76
+            },
+            aiReport: `
+                <p><strong>Analysis Summary:</strong> Your posture shows good overall alignment with some areas for improvement.</p>
+                <p><strong>Key Findings:</strong></p>
+                <ul>
+                    <li>Forward head posture detected - consider neck strengthening exercises</li>
+                    <li>Slight shoulder imbalance - focus on shoulder blade exercises</li>
+                    <li>Good hip alignment maintained</li>
+                </ul>
+                <p><strong>Recommendations:</strong> Practice chin tucks and shoulder blade squeezes throughout the day.</p>
+            `
+        };
+        
+        // Test scan results display
+        document.getElementById('testScanResults').addEventListener('click', () => {
+            displayResults(mockScanResults.combinedMetrics, mockScanResults.aiReport);
+        });
+        
+        // Test scan history
+        document.getElementById('testScanHistory').addEventListener('click', async () => {
+            // Save a mock scan to history first
+            await saveMockScanToHistory();
+            // Then display the history
+            displayScanHistory();
+        });
+        
+        // Clear scan history
+        document.getElementById('clearScanHistory').addEventListener('click', () => {
+            chrome.storage.local.remove(['scanHistory'], () => {
+                alert('Scan history cleared!');
+                document.getElementById('scanHistoryDisplay').style.display = 'none';
+            });
+        });
+        
+        // Display results function (copied from ScanPageController)
+        function displayResults(postureMetrics, aiReport) {
+            const getScoreClass = (score) => {
+                if (score >= 80) return 'score-good';
+                if (score >= 60) return 'score-fair';
+                return 'score-poor';
+            };
+            
+            const resultsHtml = `
+                <div style="margin-bottom: 24px;">
+                    <h3 style="color: var(--text); margin: 0 0 16px 0; font-size: 24px; text-align: center;">
+                        🎉 Full Body Scan Complete!
+                    </h3>
+                    
+                    <!-- Overall Score -->
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="display: inline-block; padding: 20px; background: var(--secondaryBG); border: 2px solid var(--border); border-radius: 16px;">
+                            <div style="font-size: 14px; color: var(--subtext); margin-bottom: 8px; text-transform: uppercase; font-weight: 600;">Overall Posture Score</div>
+                            <div class="${getScoreClass(postureMetrics.postureScore)}" style="font-size: 48px; font-weight: 800; margin-bottom: 8px;">${postureMetrics.postureScore}</div>
+                            <div style="font-size: 16px; color: var(--subtext);">out of 100</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Metrics -->
+                    <h4 style="color: var(--text); margin: 0 0 12px 0;">📊 Detailed Analysis</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px;">
+                        <div style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; text-align: center;">
+                            <div style="font-size: 12px; color: var(--subtext); margin-bottom: 8px; text-transform: uppercase; font-weight: 600;">Neck Tilt</div>
+                            <div style="font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 4px;">${Math.abs(postureMetrics.neckTilt).toFixed(1)}°</div>
+                            <div style="font-size: 11px; color: var(--subtext);">${Math.abs(postureMetrics.neckTilt) < 10 ? 'Good' : 'Needs attention'}</div>
+                        </div>
+                        <div style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; text-align: center;">
+                            <div style="font-size: 12px; color: var(--subtext); margin-bottom: 8px; text-transform: uppercase; font-weight: 600;">Shoulder Tilt</div>
+                            <div style="font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 4px;">${Math.abs(postureMetrics.shoulderTilt).toFixed(1)}°</div>
+                            <div style="font-size: 11px; color: var(--subtext);">${Math.abs(postureMetrics.shoulderTilt) < 5 ? 'Good' : 'Needs attention'}</div>
+                        </div>
+                        <div style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; text-align: center;">
+                            <div style="font-size: 12px; color: var(--subtext); margin-bottom: 8px; text-transform: uppercase; font-weight: 600;">Hip Alignment</div>
+                            <div style="font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 4px;">${Math.abs(postureMetrics.hipTilt || 0).toFixed(1)}°</div>
+                            <div style="font-size: 11px; color: var(--subtext);">${Math.abs(postureMetrics.hipTilt || 0) < 5 ? 'Good' : 'Needs attention'}</div>
+                        </div>
+                        <div style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; text-align: center;">
+                            <div style="font-size: 12px; color: var(--subtext); margin-bottom: 8px; text-transform: uppercase; font-weight: 600;">Overall Alignment</div>
+                            <div style="font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 4px;">${postureMetrics.overallAlignment || 0}%</div>
+                            <div style="font-size: 11px; color: var(--subtext);">${(postureMetrics.overallAlignment || 0) >= 80 ? 'Excellent' : (postureMetrics.overallAlignment || 0) >= 60 ? 'Good' : 'Needs work'}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- View Scores -->
+                    <h4 style="color: var(--text); margin: 0 0 12px 0;">👁️ Multi-View Analysis</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+                        <div style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; text-align: center;">
+                            <div style="font-size: 12px; color: var(--subtext); margin-bottom: 8px; text-transform: uppercase; font-weight: 600;">Front View Score</div>
+                            <div class="${getScoreClass(postureMetrics.frontViewScore || 0)}" style="font-size: 32px; font-weight: 700; margin-bottom: 4px;">${postureMetrics.frontViewScore || 0}</div>
+                        </div>
+                        <div style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; text-align: center;">
+                            <div style="font-size: 12px; color: var(--subtext); margin-bottom: 8px; text-transform: uppercase; font-weight: 600;">Side View Score</div>
+                            <div class="${getScoreClass(postureMetrics.sideViewScore || 0)}" style="font-size: 32px; font-weight: 700; margin-bottom: 4px;">${postureMetrics.sideViewScore || 0}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                ${aiReport ? `
+                    <div style="margin-bottom: 24px;">
+                        <h4 style="color: var(--text); margin: 0 0 12px 0;">🤖 AI Analysis & Recommendations</h4>
+                        <div style="background: var(--secondaryBG); border: 1px solid var(--border); border-radius: 12px; padding: 20px; line-height: 1.6;">
+                            ${aiReport}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div style="text-align: center; margin-top: 24px;">
+                    <p style="color: var(--subtext); margin-bottom: 16px; font-size: 14px;">
+                        📈 Your scan results have been saved to your Full Body Scan History in View Past Data
+                    </p>
+                </div>
+            `;
+            
+            document.getElementById('resultsContent').innerHTML = resultsHtml;
+            document.getElementById('scanResults').style.display = 'block';
+        }
+        
+        // Save mock scan to history
+        async function saveMockScanToHistory() {
+            const scanRecord = {
+                timestamp: Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                overallScore: mockScanResults.combinedMetrics.postureScore,
+                frontViewScore: mockScanResults.combinedMetrics.frontViewScore,
+                sideViewScore: mockScanResults.combinedMetrics.sideViewScore,
+                metrics: {
+                    neckTilt: mockScanResults.combinedMetrics.neckTilt,
+                    shoulderTilt: mockScanResults.combinedMetrics.shoulderTilt,
+                    hipTilt: mockScanResults.combinedMetrics.hipTilt,
+                    forwardHeadPosture: mockScanResults.combinedMetrics.forwardHeadPosture,
+                    overallAlignment: mockScanResults.combinedMetrics.overallAlignment
+                },
+                views: ['front', 'side'],
+                aiReport: mockScanResults.aiReport,
+                recommendations: [
+                    'Practice neck alignment exercises to reduce forward head posture',
+                    'Focus on shoulder blade strengthening exercises',
+                    'Great posture! Keep up the good work with regular movement breaks'
+                ]
+            };
+            
+            return new Promise((resolve) => {
+                chrome.storage.local.get(['scanHistory'], (result) => {
+                    const scanHistory = result.scanHistory || [];
+                    scanHistory.push(scanRecord);
+                    
+                    chrome.storage.local.set({ scanHistory }, () => {
+                        console.log('Mock scan saved to history');
+                        resolve();
+                    });
+                });
+            });
+        }
+        
+        // Display scan history
+        function displayScanHistory() {
+            chrome.storage.local.get(['scanHistory'], (result) => {
+                const scanHistory = result.scanHistory || [];
+                
+                if (scanHistory.length === 0) {
+                    document.getElementById('historyContent').innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📷</div>
+                            <div style="font-size: 16px; margin-bottom: 8px;">No scans yet</div>
+                            <div style="font-size: 14px; color: var(--subtext);">Complete a full body scan to see your posture analysis history</div>
+                        </div>
+                    `;
+                } else {
+                    const getScoreClass = (score) => {
+                        if (score >= 80) return 'score-good';
+                        if (score >= 60) return 'score-fair';
+                        return 'score-poor';
+                    };
+                    
+                    const historyHtml = scanHistory.slice(-5).reverse().map(scan => {
+                        const date = new Date(scan.timestamp);
+                        return `
+                            <div style="display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px;">
+                                <div style="width: 60px; height: 60px; border-radius: 8px; background: var(--score-surface); display: flex; align-items: center; justify-content: center; font-size: 24px;">📷</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">${date.toLocaleDateString()} at ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                    <div style="font-size: 12px; color: var(--subtext);">
+                                        ${scan.views ? `${scan.views.length} views captured` : 'Multi-view scan'} • 
+                                        ${scan.recommendations ? `${scan.recommendations.length} recommendations` : 'Analysis complete'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="${getScoreClass(scan.overallScore || 0)}" style="font-size: 18px; font-weight: 700; min-width: 50px; text-align: center;">${Math.round(scan.overallScore || 0)}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    document.getElementById('historyContent').innerHTML = historyHtml;
+                }
+                
+                document.getElementById('scanHistoryDisplay').style.display = 'block';
+            });
+        }
+    </script>
+</body>
+</html>

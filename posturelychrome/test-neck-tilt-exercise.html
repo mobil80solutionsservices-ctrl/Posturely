@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Neck Tilt Exercise</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .exercise-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .start-btn {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .stop-btn {
+            background: #f44336;
+            color: white;
+        }
+        
+        .pause-btn {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .status {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-family: monospace;
+        }
+        
+        .log {
+            background: #263238;
+            color: #4caf50;
+            padding: 15px;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .error {
+            color: #f44336;
+        }
+        
+        .warning {
+            color: #ff9800;
+        }
+        
+        .success {
+            color: #4caf50;
+        }
+        
+        .info {
+            color: #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Neck Tilt (Up-Down) Exercise Test</h1>
+        
+        <div class="exercise-info">
+            <h3>Exercise Details:</h3>
+            <ul>
+                <li><strong>Type:</strong> Neck Tilt (Up-Down)</li>
+                <li><strong>Repetitions:</strong> 7 complete cycles</li>
+                <li><strong>Hold Time:</strong> 3 seconds per position</li>
+                <li><strong>Detection:</strong> Up tilt (>110% baseline), Down tilt (<90% baseline)</li>
+                <li><strong>Baseline:</strong> Same as Sit Tall exercise (nose-to-shoulder-center)</li>
+            </ul>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn" class="start-btn">Start Exercise</button>
+            <button id="pauseBtn" class="pause-btn" disabled>Pause</button>
+            <button id="stopBtn" class="stop-btn" disabled>Stop</button>
+            <button id="clearLogBtn">Clear Log</button>
+        </div>
+        
+        <div class="status">
+            <div><strong>State:</strong> <span id="exerciseState">idle</span></div>
+            <div><strong>Rep:</strong> <span id="currentRep">0</span>/<span id="maxReps">7</span></div>
+            <div><strong>Phase:</strong> <span id="currentPhase">none</span></div>
+            <div><strong>Pose Detected:</strong> <span id="poseStatus">false</span></div>
+            <div><strong>Baseline:</strong> <span id="baselineValue">not set</span></div>
+        </div>
+        
+        <div class="log" id="logContainer"></div>
+    </div>
+
+    <script type="module">
+        import { NeckTiltController } from './src/NeckTiltController.js';
+        import { AudioSequenceManager } from './src/AudioSequenceManager.js';
+        import { PoseValidationEngine } from './src/PoseValidationEngine.js';
+        import { CalibrationManager } from './src/CalibrationManager.js';
+
+        class NeckTiltExerciseTest {
+            constructor() {
+                this.controller = null;
+                this.audioManager = null;
+                this.poseValidator = null;
+                this.calibrationManager = null;
+                this.isRunning = false;
+                
+                this.initializeUI();
+                this.setupEventListeners();
+                this.log('🔄 Neck Tilt Exercise Test initialized');
+            }
+            
+            initializeUI() {
+                this.startBtn = document.getElementById('startBtn');
+                this.pauseBtn = document.getElementById('pauseBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.clearLogBtn = document.getElementById('clearLogBtn');
+                this.logContainer = document.getElementById('logContainer');
+                
+                // Status elements
+                this.exerciseStateEl = document.getElementById('exerciseState');
+                this.currentRepEl = document.getElementById('currentRep');
+                this.maxRepsEl = document.getElementById('maxReps');
+                this.currentPhaseEl = document.getElementById('currentPhase');
+                this.poseStatusEl = document.getElementById('poseStatus');
+                this.baselineValueEl = document.getElementById('baselineValue');
+            }
+            
+            setupEventListeners() {
+                this.startBtn.addEventListener('click', () => this.startExercise());
+                this.pauseBtn.addEventListener('click', () => this.pauseExercise());
+                this.stopBtn.addEventListener('click', () => this.stopExercise());
+                this.clearLogBtn.addEventListener('click', () => this.clearLog());
+                
+                // Listen for exercise events
+                document.addEventListener('neckTiltStateChange', (event) => {
+                    this.handleStateChange(event.detail);
+                });
+                
+                document.addEventListener('exerciseCompleted', (event) => {
+                    this.handleExerciseCompleted(event.detail);
+                });
+            }
+            
+            async startExercise() {
+                try {
+                    this.log('🚀 Starting Neck Tilt exercise test...');
+                    
+                    // Initialize managers
+                    await this.initializeManagers();
+                    
+                    // Create controller
+                    this.controller = new NeckTiltController(
+                        this.audioManager,
+                        this.poseValidator,
+                        this.calibrationManager
+                    );
+                    
+                    // Initialize controller
+                    await this.controller.initialize();
+                    this.log('✅ Controller initialized');
+                    
+                    // Update UI
+                    this.startBtn.disabled = true;
+                    this.pauseBtn.disabled = false;
+                    this.stopBtn.disabled = false;
+                    this.isRunning = true;
+                    
+                    // Start exercise
+                    await this.controller.startExercise();
+                    
+                } catch (error) {
+                    this.logError('❌ Failed to start exercise:', error);
+                    this.resetUI();
+                }
+            }
+            
+            async initializeManagers() {
+                this.log('🔄 Initializing managers...');
+                
+                // Initialize AudioSequenceManager
+                this.audioManager = new AudioSequenceManager();
+                await this.audioManager.initialize();
+                this.log('✅ AudioManager initialized');
+                
+                // Initialize PoseValidationEngine
+                this.poseValidator = new PoseValidationEngine();
+                await this.poseValidator.initialize();
+                this.poseValidator.start(); // Start pose detection
+                this.log('✅ PoseValidator initialized and started');
+                
+                // Initialize CalibrationManager
+                this.calibrationManager = new CalibrationManager(this.poseValidator);
+                await this.calibrationManager.initialize();
+                this.log('✅ CalibrationManager initialized');
+                
+                // Start status monitoring
+                this.startStatusMonitoring();
+            }
+            
+            startStatusMonitoring() {
+                // Update status every 500ms
+                this.statusInterval = setInterval(() => {
+                    if (this.controller) {
+                        const state = this.controller.getState();
+                        this.updateStatus(state);
+                    }
+                }, 500);
+            }
+            
+            updateStatus(state) {
+                this.exerciseStateEl.textContent = state.state;
+                this.currentRepEl.textContent = state.currentRep || 0;
+                this.maxRepsEl.textContent = state.maxReps || 7;
+                this.currentPhaseEl.textContent = state.currentPhase || 'none';
+                this.poseStatusEl.textContent = state.isInCorrectPose ? 'true' : 'false';
+                
+                if (state.hasBaseline) {
+                    this.baselineValueEl.textContent = 'set';
+                } else {
+                    this.baselineValueEl.textContent = 'not set';
+                }
+            }
+            
+            async pauseExercise() {
+                try {
+                    if (this.controller) {
+                        await this.controller.pause();
+                        this.log('⏸️ Exercise paused');
+                        this.pauseBtn.textContent = 'Resume';
+                        this.pauseBtn.onclick = () => this.resumeExercise();
+                    }
+                } catch (error) {
+                    this.logError('❌ Failed to pause exercise:', error);
+                }
+            }
+            
+            async resumeExercise() {
+                try {
+                    if (this.controller) {
+                        await this.controller.resume();
+                        this.log('▶️ Exercise resumed');
+                        this.pauseBtn.textContent = 'Pause';
+                        this.pauseBtn.onclick = () => this.pauseExercise();
+                    }
+                } catch (error) {
+                    this.logError('❌ Failed to resume exercise:', error);
+                }
+            }
+            
+            async stopExercise() {
+                try {
+                    this.log('⏹️ Stopping exercise...');
+                    
+                    if (this.controller) {
+                        await this.controller.stop();
+                    }
+                    
+                    await this.cleanup();
+                    this.resetUI();
+                    this.log('✅ Exercise stopped');
+                    
+                } catch (error) {
+                    this.logError('❌ Failed to stop exercise:', error);
+                    this.resetUI();
+                }
+            }
+            
+            async cleanup() {
+                // Stop status monitoring
+                if (this.statusInterval) {
+                    clearInterval(this.statusInterval);
+                    this.statusInterval = null;
+                }
+                
+                // Cleanup managers
+                if (this.audioManager) {
+                    this.audioManager.stopAll();
+                }
+                
+                if (this.poseValidator) {
+                    this.poseValidator.stop();
+                }
+                
+                if (this.calibrationManager) {
+                    this.calibrationManager.stop();
+                }
+                
+                // Reset references
+                this.controller = null;
+                this.audioManager = null;
+                this.poseValidator = null;
+                this.calibrationManager = null;
+                this.isRunning = false;
+            }
+            
+            resetUI() {
+                this.startBtn.disabled = false;
+                this.pauseBtn.disabled = true;
+                this.pauseBtn.textContent = 'Pause';
+                this.pauseBtn.onclick = () => this.pauseExercise();
+                this.stopBtn.disabled = true;
+                
+                // Reset status
+                this.exerciseStateEl.textContent = 'idle';
+                this.currentRepEl.textContent = '0';
+                this.currentPhaseEl.textContent = 'none';
+                this.poseStatusEl.textContent = 'false';
+                this.baselineValueEl.textContent = 'not set';
+            }
+            
+            handleStateChange(detail) {
+                this.log(`🔄 State change: ${detail.oldState} → ${detail.newState}`);
+                
+                if (detail.currentRep) {
+                    this.log(`📊 Rep: ${detail.currentRep}/7, Phase: ${detail.currentPhase || 'none'}`);
+                }
+            }
+            
+            handleExerciseCompleted(detail) {
+                this.log('🎉 Exercise completed!');
+                this.log(`📊 Results: ${JSON.stringify(detail.results, null, 2)}`);
+                
+                // Auto-cleanup after completion
+                setTimeout(() => {
+                    this.cleanup();
+                    this.resetUI();
+                }, 3000);
+            }
+            
+            log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                
+                // Color code based on message type
+                if (message.includes('❌')) {
+                    logEntry.className = 'error';
+                } else if (message.includes('⚠️')) {
+                    logEntry.className = 'warning';
+                } else if (message.includes('✅') || message.includes('🎉')) {
+                    logEntry.className = 'success';
+                } else if (message.includes('ℹ️') || message.includes('📊')) {
+                    logEntry.className = 'info';
+                }
+                
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                this.logContainer.appendChild(logEntry);
+                this.logContainer.scrollTop = this.logContainer.scrollHeight;
+            }
+            
+            logError(message, error) {
+                this.log(`${message} ${error.message}`);
+                console.error(message, error);
+            }
+            
+            clearLog() {
+                this.logContainer.innerHTML = '';
+                this.log('🧹 Log cleared');
+            }
+        }
+
+        // Initialize test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new NeckTiltExerciseTest();
+        });
+    </script>
+</body>
+</html>

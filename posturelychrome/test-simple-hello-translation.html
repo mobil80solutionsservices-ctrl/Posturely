@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Hello Translation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .language-selector {
+            margin: 10px 0;
+        }
+        select {
+            padding: 8px;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .console-output {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Hello Translation Test</h1>
+    <p>This test will help us verify if our translation implementation is working correctly.</p>
+
+    <div class="test-section">
+        <h3>Language Selection</h3>
+        <div class="language-selector">
+            <label for="languageSelect">Select Target Language:</label>
+            <select id="languageSelect">
+                <option value="en">English</option>
+                <option value="hi">Hindi (हिंदी)</option>
+                <option value="es">Spanish (español)</option>
+                <option value="fr">French (français)</option>
+                <option value="de">German (Deutsch)</option>
+                <option value="ja">Japanese (日本語)</option>
+                <option value="ko">Korean (한국어)</option>
+                <option value="zh">Chinese (中文)</option>
+                <option value="ar">Arabic (العربية)</option>
+                <option value="ru">Russian (русский)</option>
+            </select>
+        </div>
+        
+        <button onclick="testDirectAPI()">Test Direct Chrome API</button>
+        <button onclick="testOurImplementation()">Test Our LocalizationService</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Results</h3>
+        <div id="results"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Console Output</h3>
+        <div id="consoleOutput" class="console-output">Console logs will appear here...</div>
+    </div>
+
+    <script type="module">
+        import { LocalizationService } from './src/LocalizationService.js';
+
+        let localizationService;
+        let consoleOutput = document.getElementById('consoleOutput');
+        
+        // Initialize LocalizationService
+        try {
+            localizationService = new LocalizationService();
+            await localizationService.initialize();
+            addConsoleLog('✅ LocalizationService initialized successfully');
+        } catch (error) {
+            addConsoleLog(`❌ Failed to initialize LocalizationService: ${error.message}`);
+        }
+
+        // Override console.log to capture output
+        const originalConsoleLog = console.log;
+        const originalConsoleWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            addConsoleLog('LOG: ' + args.join(' '));
+        };
+        
+        console.warn = function(...args) {
+            originalConsoleWarn.apply(console, args);
+            addConsoleLog('WARN: ' + args.join(' '));
+        };
+
+        function addConsoleLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            consoleOutput.textContent += `[${timestamp}] ${message}\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        window.testDirectAPI = async function() {
+            const selectedLanguage = document.getElementById('languageSelect').value;
+            addResult(`Testing Direct Chrome API for ${selectedLanguage}...`, 'info');
+            addConsoleLog(`\n=== DIRECT API TEST FOR ${selectedLanguage} ===`);
+            
+            try {
+                // Check if API is available
+                if (typeof Translator === 'undefined') {
+                    addResult('❌ Translator API not available in this browser', 'error');
+                    addConsoleLog('❌ Translator API not available');
+                    return;
+                }
+
+                // Check availability
+                const availability = await Translator.availability({
+                    sourceLanguage: 'en',
+                    targetLanguage: selectedLanguage
+                });
+                
+                addConsoleLog(`Availability for ${selectedLanguage}: ${availability}`);
+                
+                if (availability === 'unavailable') {
+                    addResult(`❌ ${selectedLanguage} is unavailable`, 'error');
+                    return;
+                }
+
+                // Create translator
+                const translator = await Translator.create({
+                    sourceLanguage: 'en',
+                    targetLanguage: selectedLanguage
+                });
+                
+                addConsoleLog(`Translator created for ${selectedLanguage}`);
+
+                // Translate "Hello"
+                const result = await translator.translate({ text: 'Hello' });
+                const translatedText = result.output;
+                
+                addConsoleLog(`Direct API Result: "Hello" -> "${translatedText}"`);
+                
+                if (translatedText === 'Hello') {
+                    addResult(`⚠️ Direct API returned same text: "${translatedText}"`, 'warning');
+                } else {
+                    addResult(`✅ Direct API translation: "Hello" -> "${translatedText}"`, 'success');
+                }
+
+            } catch (error) {
+                addResult(`❌ Direct API Error: ${error.message}`, 'error');
+                addConsoleLog(`❌ Direct API Error: ${error.message}`);
+            }
+        };
+
+        window.testOurImplementation = async function() {
+            const selectedLanguage = document.getElementById('languageSelect').value;
+            addResult(`Testing Our LocalizationService for ${selectedLanguage}...`, 'info');
+            addConsoleLog(`\n=== OUR IMPLEMENTATION TEST FOR ${selectedLanguage} ===`);
+            
+            try {
+                if (!localizationService) {
+                    addResult('❌ LocalizationService not initialized', 'error');
+                    return;
+                }
+
+                // Test our getTranslation method
+                const translatedText = await localizationService.getTranslation('Hello', selectedLanguage);
+                
+                addConsoleLog(`Our Implementation Result: "Hello" -> "${translatedText}"`);
+                
+                if (translatedText === 'Hello') {
+                    addResult(`⚠️ Our implementation returned same text: "${translatedText}"`, 'warning');
+                } else {
+                    addResult(`✅ Our implementation translation: "Hello" -> "${translatedText}"`, 'success');
+                }
+
+                // Also test fallback directly
+                const fallbackText = localizationService.getFallbackTranslation('Hello', selectedLanguage);
+                addConsoleLog(`Fallback translation: "Hello" -> "${fallbackText}"`);
+                
+                if (fallbackText !== 'Hello') {
+                    addResult(`📝 Fallback available: "Hello" -> "${fallbackText}"`, 'info');
+                }
+
+            } catch (error) {
+                addResult(`❌ Our Implementation Error: ${error.message}`, 'error');
+                addConsoleLog(`❌ Our Implementation Error: ${error.message}`);
+            }
+        };
+
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+            consoleOutput.textContent = 'Console logs will appear here...\n';
+        };
+
+        // Add some initial info
+        addConsoleLog('=== Translation Test Page Loaded ===');
+        addConsoleLog('Select a language and click test buttons to see results');
+    </script>
+</body>
+</html>

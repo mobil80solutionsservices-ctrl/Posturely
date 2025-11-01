@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome Built-in Translator API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        input, select {
+            padding: 5px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: 200px;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        pre {
+            background: #f7f7f7;
+            padding: 0.5rem;
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chrome Built-in Translator API Test</h1>
+    <p>This page tests Chrome's built-in Translator API (Chrome 138+) without Origin Trial tokens.</p>
+
+    <div class="test-section">
+        <h2>API Availability Check</h2>
+        <div id="apiStatus" class="status info">Checking API availability...</div>
+        <button onclick="checkAPIs()">Recheck APIs</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Translation Test</h2>
+        <p><strong>Note:</strong> Hindi translation has known compatibility issues and may not work reliably in the current Chrome version.</p>
+        <div>
+            <textarea id="textToTranslate" placeholder="Enter text to translate...">Hello, how are you today? I hope you're having a great day!</textarea>
+            <br>
+            <select id="targetLanguage">
+                <option value="es">Spanish (Español)</option>
+                <option value="fr">French (Français)</option>
+                <option value="de">German (Deutsch)</option>
+                <option value="pt">Portuguese (Português)</option>
+                <option value="it">Italian (Italiano)</option>
+                <option value="ja">Japanese (日本語)</option>
+                <option value="ko">Korean (한국어)</option>
+                <option value="zh">Chinese (中文)</option>
+                <option value="hi">Hindi (हिन्दी) - ⚠️ Limited Support</option>
+            </select>
+            <button onclick="testTranslation()" id="translateBtn">Translate</button>
+        </div>
+        <div id="translationResult" class="status info" style="display: none;"></div>
+        <pre id="output" style="display: none;"></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>Language Availability Check</h2>
+        <button onclick="checkLanguageSupport()">Check All Languages</button>
+        <div id="languageSupport" class="status info" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Check API availability using Chrome's built-in Translator API
+        window.checkAPIs = async function() {
+            const statusDiv = document.getElementById('apiStatus');
+            statusDiv.innerHTML = 'Checking APIs...';
+            
+            try {
+                // Check if Translator API is available
+                const translatorAvailable = typeof Translator !== 'undefined';
+                
+                let statusHTML = '<h3>API Status:</h3>';
+                statusHTML += `<div class="${translatorAvailable ? 'success' : 'error'}">Translator API: ${translatorAvailable ? '✅ Available' : '❌ Not Available'}</div>`;
+                
+                if (translatorAvailable) {
+                    // Test availability for Spanish
+                    try {
+                        const availability = await Translator.availability({
+                            sourceLanguage: 'en',
+                            targetLanguage: 'es'
+                        });
+                        statusHTML += `<div class="info">Spanish availability: ${availability}</div>`;
+                        statusHTML += '<div class="success">Translation should work! 🎉</div>';
+                    } catch (error) {
+                        statusHTML += `<div class="error">Error checking availability: ${error.message}</div>`;
+                    }
+                } else {
+                    statusHTML += '<div class="error">Chrome built-in AI Translator not available. You need Chrome 138+ with AI features enabled.</div>';
+                }
+                
+                statusDiv.innerHTML = statusHTML;
+                
+                // Enable/disable buttons
+                document.getElementById('translateBtn').disabled = !translatorAvailable;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">Error checking APIs: ${error.message}</div>`;
+            }
+        };
+
+        // Test translation using Chrome's built-in Translator API
+        window.testTranslation = async function() {
+            const text = document.getElementById('textToTranslate').value;
+            const targetLang = document.getElementById('targetLanguage').value;
+            const resultDiv = document.getElementById('translationResult');
+            const outputDiv = document.getElementById('output');
+            
+            if (!text.trim()) {
+                resultDiv.innerHTML = '<div class="error">Please enter text to translate</div>';
+                resultDiv.style.display = 'block';
+                outputDiv.style.display = 'none';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="info">Translating...</div>';
+            resultDiv.style.display = 'block';
+            outputDiv.style.display = 'none';
+            
+            try {
+                // Check if Translator API is available
+                if (typeof Translator === 'undefined') {
+                    resultDiv.innerHTML = '<div class="error">Translator API not available</div>';
+                    return;
+                }
+                
+                // Check availability for this language pair
+                const availability = await Translator.availability({
+                    sourceLanguage: 'en',
+                    targetLanguage: targetLang
+                });
+                
+                console.log(`Availability for ${targetLang}:`, availability);
+                
+                if (availability === 'unavailable') {
+                    resultDiv.innerHTML = `<div class="error">Translation to ${targetLang} is not supported on this device</div>`;
+                    return;
+                }
+                
+                if (availability === 'after-download') {
+                    resultDiv.innerHTML = '<div class="info">Downloading translation model... This may take a moment.</div>';
+                }
+                
+                // Create translator
+                const translator = await Translator.create({
+                    sourceLanguage: 'en',
+                    targetLanguage: targetLang,
+                    monitor(monitor) {
+                        monitor.addEventListener('downloadprogress', (e) => {
+                            const progress = Math.round(e.loaded * 100);
+                            resultDiv.innerHTML = `<div class="info">Downloading model: ${progress}%</div>`;
+                        });
+                    }
+                });
+                
+                // Translate
+                const result = await translator.translate(text);
+                
+                if (result && typeof result === 'string' && result.trim()) {
+                    resultDiv.innerHTML = `<div class="success">Translation completed! ✅</div>`;
+                    outputDiv.innerHTML = `Original (English): ${text}\n\nTranslated (${targetLang}): ${result}`;
+                    outputDiv.style.display = 'block';
+                } else {
+                    resultDiv.innerHTML = '<div class="error">Translation failed - no valid output received</div>';
+                    console.log('Translation result:', result, 'Type:', typeof result);
+                }
+                
+            } catch (error) {
+                console.error('Translation error:', error);
+                
+                if (error.message.includes('Only English is supported')) {
+                    resultDiv.innerHTML = `<div class="warning">Language ${targetLang} is not yet supported in your Chrome build. Currently supported: English, Spanish, Japanese</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Translation failed: ${error.message}</div>`;
+                }
+            }
+        };
+
+        // Check support for all languages
+        window.checkLanguageSupport = async function() {
+            const supportDiv = document.getElementById('languageSupport');
+            supportDiv.innerHTML = '<div class="info">Checking language support...</div>';
+            supportDiv.style.display = 'block';
+            
+            if (typeof Translator === 'undefined') {
+                supportDiv.innerHTML = '<div class="error">Translator API not available</div>';
+                return;
+            }
+            
+            const languages = [
+                { code: 'es', name: 'Spanish' },
+                { code: 'fr', name: 'French' },
+                { code: 'de', name: 'German' },
+                { code: 'pt', name: 'Portuguese' },
+                { code: 'it', name: 'Italian' },
+                { code: 'ja', name: 'Japanese' },
+                { code: 'ko', name: 'Korean' },
+                { code: 'zh', name: 'Chinese' },
+                { code: 'hi', name: 'Hindi' }
+            ];
+            
+            let supportHTML = '<h3>Language Support:</h3>';
+            
+            for (const lang of languages) {
+                try {
+                    const availability = await Translator.availability({
+                        sourceLanguage: 'en',
+                        targetLanguage: lang.code
+                    });
+                    
+                    const statusClass = availability === 'unavailable' ? 'error' : 'success';
+                    supportHTML += `<div class="${statusClass}">${lang.name} (${lang.code}): ${availability}</div>`;
+                } catch (error) {
+                    supportHTML += `<div class="error">${lang.name} (${lang.code}): Error - ${error.message}</div>`;
+                }
+            }
+            
+            supportDiv.innerHTML = supportHTML;
+        };
+
+        // Initialize when page loads
+        checkAPIs();
+    </script>
+</body>
+</html>

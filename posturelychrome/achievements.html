@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Posturely Achievements</title>
+    <style>
+        :root {
+            --bg: #FFFFFF;
+            --text: #2B1E0F;
+            --subtext: #5B4A37;
+            --accent: #FED867;
+            --border: rgba(122, 75, 0, 0.18);
+            --score-surface: rgba(0,0,0,0.04);
+            --buttonPrimaryBG1: #FFD045;
+            --buttonPrimaryBG2: #F9B52D;
+            --buttonPrimaryText: #2B1E0F;
+            --secondaryBG: #FFF3C9;
+            --success: #34C759;
+            --warning: #FFA000;
+            --danger: #EF4444;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .achievements-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .achievements-header {
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .achievements-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Main Content */
+        .achievements-content {
+            flex: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Cards */
+        .achievements-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0 0 16px 0;
+        }
+
+        /* Summary Stats */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--score-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0 0 4px 0;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--subtext);
+            text-transform: uppercase;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .progress-ring {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 12px;
+            position: relative;
+        }
+
+        .progress-ring svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring-bg {
+            fill: none;
+            stroke: var(--border);
+            stroke-width: 4;
+        }
+
+        .progress-ring-fill {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 4;
+            stroke-linecap: round;
+            transition: stroke-dasharray 0.3s ease;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        /* Achievement Categories */
+        .achievement-category {
+            margin-bottom: 24px;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            background: var(--secondaryBG);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .category-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .category-progress {
+            font-size: 14px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .achievement-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .achievement-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px;
+            background: var(--secondaryBG);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+        }
+
+        .achievement-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .achievement-item.earned {
+            background: var(--accent);
+            color: var(--buttonPrimaryText);
+            border-color: var(--accent);
+        }
+
+        .achievement-item.in-progress {
+            border-color: #007AFF;
+            background: rgba(0, 122, 255, 0.05);
+        }
+
+        .achievement-item.locked {
+            opacity: 0.7;
+        }
+
+        .achievement-icon {
+            font-size: 32px;
+            min-width: 40px;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .achievement-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .achievement-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .achievement-item.earned .achievement-name {
+            color: var(--buttonPrimaryText);
+        }
+
+        .achievement-description {
+            font-size: 14px;
+            color: var(--subtext);
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .achievement-item.earned .achievement-description {
+            color: var(--buttonPrimaryText);
+            opacity: 0.9;
+        }
+
+        .achievement-requirement {
+            font-size: 12px;
+            color: var(--subtext);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .achievement-item.earned .achievement-requirement {
+            color: var(--buttonPrimaryText);
+            opacity: 0.8;
+        }
+
+        .achievement-progress-container {
+            margin-top: 8px;
+        }
+
+        .achievement-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .achievement-progress-fill {
+            height: 100%;
+            background: #007AFF;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+
+        .achievement-item.earned .achievement-progress-fill {
+            background: var(--buttonPrimaryText);
+        }
+
+        .achievement-progress-text {
+            font-size: 11px;
+            color: var(--subtext);
+            font-weight: 600;
+        }
+
+        .achievement-item.earned .achievement-progress-text {
+            color: var(--buttonPrimaryText);
+            opacity: 0.8;
+        }
+
+        .achievement-earned-date {
+            font-size: 11px;
+            color: var(--buttonPrimaryText);
+            opacity: 0.8;
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        .achievement-status-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-earned {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-in-progress {
+            background: #007AFF;
+            color: white;
+        }
+
+        .status-locked {
+            background: var(--subtext);
+            color: white;
+        }
+
+
+
+        /* Responsive Design */
+        @media (max-width: 900px) {
+            .achievement-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .achievements-content {
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .achievements-header {
+                padding: 12px 16px;
+            }
+
+            .achievements-title {
+                font-size: 24px;
+            }
+
+            .summary-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .achievement-item {
+                min-height: auto;
+            }
+        }
+
+        /* Loading States */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--subtext);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-subtext {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="achievements-container">
+        <!-- Header -->
+        <header class="achievements-header">
+            <div class="header-left">
+                <h1 class="achievements-title">🏆 Achievements</h1>
+            </div>
+            <div class="header-right">
+                <!-- Future: Filter/sort options -->
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="achievements-content">
+            <!-- Summary Stats -->
+            <div class="achievements-card">
+                <h2 class="card-title">Achievement Progress</h2>
+                <div class="summary-stats" id="summaryStats">
+                    <!-- Stats will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Achievement Categories -->
+            <div class="achievements-card">
+                <h2 class="card-title">All Achievements</h2>
+                <div id="achievementCategories">
+                    <!-- Categories will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="achievements.js"></script>
+</body>
+</html>
